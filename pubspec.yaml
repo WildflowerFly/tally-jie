@@ -1,0 +1,23 @@
+name: tallyjie
+description: "TallyJie - 记录生活，而不是记录数字（Android / iOS）"
+publish_to: 'none'
+version: 1.0.0+1
+
+environment:
+  sdk: ^3.12.2
+
+dependencies:
+  flutter:
+    sdk: flutter
+  tallyjie_core:
+    path: core
+
+dev_dependencies:
+  flutter_test:
+    sdk: flutter
+  flutter_lints: ^6.0.0
+  # 允许在根目录执行 core/ 的测试；仅用于测试，不支持桌面应用。
+  sqflite_common_ffi: ^2.4.2
+
+flutter:
+  uses-material-design: true
