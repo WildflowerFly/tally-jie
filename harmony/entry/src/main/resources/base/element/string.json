@@ -1,0 +1,16 @@
+{
+  "string": [
+    {
+      "name": "module_desc",
+      "value": "TallyJie 本地生活记录与记账"
+    },
+    {
+      "name": "EntryAbility_desc",
+      "value": "记录生活，而不是记录数字。"
+    },
+    {
+      "name": "EntryAbility_label",
+      "value": "TallyJie"
+    }
+  ]
+}
