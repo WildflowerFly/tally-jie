@@ -1,3 +1,4 @@
+import exchangeFilesTest from './ExchangeFiles.test';
 import abilityTest from './Ability.test';
 import navigationTest from './Navigation.test';
 import persistenceTest from './Persistence.test';
@@ -8,4 +9,5 @@ export default function testsuite() {
   navigationTest();
   persistenceTest();
   databaseMigrationTest();
+  exchangeFilesTest();
 }
