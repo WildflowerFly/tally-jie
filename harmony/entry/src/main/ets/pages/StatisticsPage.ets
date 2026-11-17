@@ -1,3 +1,4 @@
+import { FinanceHeader } from '../components/FinanceHeader';
 import { FinanceCharts } from '../components/FinanceCharts';
 import { AppState } from '../state/AppState';
 import { FinanceTheme } from '../theme/FinanceTheme';
@@ -16,6 +17,7 @@ export struct StatisticsPage {
   @State unit: TrendUnit = 'day';
   @State result: StatisticsResult = { incomeCents: 0, expenseCents: 0, netCents: 0, averageExpenseCents: 0, categories: [], trend: [], highestDays: [], highestCategories: [] };
   @State error: string = '';
+  @State customRange: boolean = false;
   private appliedIncome: boolean = false;
   private appliedStart: string = this.start;
   private appliedEnd: string = this.end;
@@ -35,34 +37,48 @@ export struct StatisticsPage {
   }
   build() {
     Column({ space: 12 }) {
-      Text('统计').fontSize(28).fontWeight(FontWeight.Bold).width('100%')
+      FinanceHeader({ title: '收支洞察', subtitle: 'OVERVIEW · 看见财务节奏' })
       Row({ space: 8 }) {
-        Button('本周').onClick(() => this.period(0))
-        Button('本月').onClick(() => this.period(1))
-        Button('本年').onClick(() => this.period(2))
+        Button('本周').backgroundColor(FinanceTheme.text).onClick(() => this.period(0))
+        Button('本月').backgroundColor(FinanceTheme.text).onClick(() => this.period(1))
+        Button('本年').backgroundColor(FinanceTheme.text).onClick(() => this.period(2))
       }
-      TextInput({ text: this.start, placeholder: '开始日期 YYYY-MM-DD' }).onChange((value: string) => { this.start = value; })
-      TextInput({ text: this.end, placeholder: '结束日期 YYYY-MM-DD' }).onChange((value: string) => { this.end = value; })
-      Button('应用自定义范围').onClick(() => this.refresh())
+      Button(this.customRange ? '收起日期设置 −' : '自定义日期范围 ＋').backgroundColor('#EAEAEA').fontColor(FinanceTheme.text)
+        .onClick(() => { this.customRange = !this.customRange; })
+      if (this.customRange) {
+        Column({ space: 12 }) {
+          TextInput({ text: this.start, placeholder: '开始日期 YYYY-MM-DD' }).onChange((value: string) => { this.start = value; })
+          TextInput({ text: this.end, placeholder: '结束日期 YYYY-MM-DD' }).onChange((value: string) => { this.end = value; })
+          Button('应用范围').backgroundColor(FinanceTheme.text).onClick(() => this.refresh())
+        }.padding(20).backgroundColor('#FFFFFF').borderRadius(24)
+      }
       Text(`${this.appliedStart} 至 ${this.appliedEnd}`).fontSize(13)
       if (this.error) { Text(this.error).fontColor(FinanceTheme.expense) }
-      Button(`收入 ¥${money(this.result.incomeCents)}`).fontColor(FinanceTheme.income).backgroundColor('#FFFFFF').onClick(() => this.drill('income'))
-      Button(`支出 ¥${money(this.result.expenseCents)}`).fontColor(FinanceTheme.expense).backgroundColor('#FFFFFF').onClick(() => this.drill('expense'))
-      Text(`结余 ¥${money(this.result.netCents)} · 日均支出 ¥${money(this.result.averageExpenseCents)}`)
+      Column({ space: 12 }) {
+        Text('期间结余 / CNY').fontSize(12).fontColor('#BCBCBC')
+        Text(`¥ ${money(this.result.netCents)}`).fontSize(36).fontWeight(FontWeight.Bold).fontColor('#FFFFFF').maxLines(1).minFontSize(20).maxFontSize(36).width('100%')
+        Row({ space: 12 }) {
+          Button(`↙ 收入 ¥${money(this.result.incomeCents)}`).fontSize(13).fontColor('#D5F1E5').backgroundColor('#363636').layoutWeight(1).onClick(() => this.drill('income'))
+          Button(`↗ 支出 ¥${money(this.result.expenseCents)}`).fontSize(13).fontColor('#F6D5CD').backgroundColor('#363636').layoutWeight(1).onClick(() => this.drill('expense'))
+        }
+        Text(`日均支出 ¥${money(this.result.averageExpenseCents)}`).fontSize(13).fontColor('#C8C8C8')
+      }.alignItems(HorizontalAlign.Start).padding(24).width('100%').borderRadius(28)
+        .linearGradient({ angle: 120, colors: [['#353535', 0], ['#101010', 1]] })
       Text(`最高消费日：${this.result.highestDays.join('、') || '暂无'}\n最高分类：${this.result.highestCategories.join('、') || '暂无'}`).fontSize(14)
       Row({ space: 8 }) {
-        Button('支出分布').onClick(() => { this.income = false; this.refresh(); })
-        Button('收入分布').onClick(() => { this.income = true; this.refresh(); })
+        Button('支出分布').backgroundColor(!this.income ? FinanceTheme.text : '#EAEAEA').fontColor(!this.income ? '#FFFFFF' : FinanceTheme.text).onClick(() => { this.income = false; this.refresh(); })
+        Button('收入分布').backgroundColor(this.income ? FinanceTheme.text : '#EAEAEA').fontColor(this.income ? '#FFFFFF' : FinanceTheme.text).onClick(() => { this.income = true; this.refresh(); })
       }
       Select([{ value: '日趋势' }, { value: '周趋势' }, { value: '月趋势' }]).onSelect((index: number) => {
         this.unit = index === 0 ? 'day' : index === 1 ? 'week' : 'month'; this.refresh();
       })
       if (this.result.categories.length === 0) { Text('当前范围暂无数据').fontColor(FinanceTheme.muted) }
+      Text('分布与趋势').fontSize(19).fontWeight(FontWeight.Bold).width('100%').margin({ top: 12 })
       FinanceCharts({ categories: this.result.categories, trend: this.result.trend,
         onCategory: (id: string) => this.drill(this.appliedIncome ? 'income' : 'expense', id),
         onBucket: (row: StatBucket) => this.drill(this.appliedIncome ? 'income' : 'expense', '', row.startDate, row.endDate) })
       ForEach(this.result.categories, (row: CategoryStat) => {
-        Button(`${row.name} · ¥${money(row.amountCents)} · ${row.percent.toFixed(1)}%`).width('100%')
+        Button(`${row.name} · ¥${money(row.amountCents)} · ${row.percent.toFixed(1)}%`).width('100%').height(52).borderRadius(16).backgroundColor('#FFFFFF').fontColor(FinanceTheme.text)
           .onClick(() => this.drill(this.appliedIncome ? 'income' : 'expense', row.id))
       }, (row: CategoryStat) => row.id)
 

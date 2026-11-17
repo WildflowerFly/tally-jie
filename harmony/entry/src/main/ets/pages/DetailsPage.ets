@@ -1,3 +1,4 @@
+import { FinanceHeader } from '../components/FinanceHeader';
 import { AppState } from '../state/AppState';
 import { FinanceTheme } from '../theme/FinanceTheme';
 import { LedgerFilter, LedgerEntry, LedgerCursor, EntryType } from '../model/LedgerModels';
@@ -37,6 +38,7 @@ export struct DetailsPage {
   private active: LedgerFilter = defaultFilter();
   @State days: DailyTotal[] = [];
   @State loading: boolean = false;
+  @State showFilters: boolean = false;
   private request: number = 0;
   private pageRevision: number = 0;
   aboutToAppear(): void {
@@ -109,8 +111,8 @@ export struct DetailsPage {
   }
   build() {
     Column({ space: 12 }) {
-      Text('明细').fontSize(28).fontWeight(FontWeight.Bold).width('100%')
-      Button('预算管理').onClick(() => this.onBudgets())
+      FinanceHeader({ title: this.selected ? '交易详情' : '交易明细', subtitle: 'TRANSACTIONS · 每一笔都有记录' })
+      Button('预算管理 ↗').backgroundColor('#EAEAEA').fontColor(FinanceTheme.text).onClick(() => this.onBudgets())
       if (this.selected) {
         Text('账单详情 / 编辑').fontSize(20)
         Text(`创建时间：${this.state.data.entries.find((row) => row.id === this.selected)?.createdAt || '历史数据未记录'}`).fontSize(13)
@@ -124,15 +126,19 @@ export struct DetailsPage {
         TextInput({ text: this.editDate, placeholder: 'YYYY-MM-DD' }).onChange((value: string) => { this.editDate = value; })
         TextInput({ text: this.editTime, placeholder: 'HH:mm' }).onChange((value: string) => { this.editTime = value; })
         TextInput({ text: this.editNote, placeholder: '备注' }).maxLength(500).onChange((value: string) => { this.editNote = value; })
-        Button('保存修改').enabled(this.state.status === 'ready' && !this.state.saving).onClick(() => this.save())
-        Button('删除账单').enabled(this.state.status === 'ready' && !this.state.saving).onClick(() => this.confirmDelete())
-        Button('返回列表').onClick(() => {
+        Button('保存修改').width('100%').height(50).backgroundColor(FinanceTheme.text).enabled(this.state.status === 'ready' && !this.state.saving).onClick(() => this.save())
+        Button('删除账单').backgroundColor('#F8EDEA').fontColor(FinanceTheme.expense).enabled(this.state.status === 'ready' && !this.state.saving).onClick(() => this.confirmDelete())
+        Button('返回列表').backgroundColor('#EAEAEA').fontColor(FinanceTheme.text).onClick(() => {
           this.getUIContext().showAlertDialog({ title: '放弃未保存的修改？', message: '原账单不会变化。',
             primaryButton: { value: '继续编辑', action: () => {} },
             secondaryButton: { value: '放弃修改', action: () => { this.selected = ''; } } });
         })
       } else {
         TextInput({ text: this.keyword, placeholder: '搜索分类、备注或账户' }).onChange((value: string) => { this.keyword = value; })
+        Button(this.showFilters ? '收起筛选 −' : '组合筛选 ＋').backgroundColor('#EAEAEA').fontColor(FinanceTheme.text)
+          .onClick(() => { this.showFilters = !this.showFilters; })
+        if (this.showFilters) {
+        Column({ space: 12 }) {
         Select([{ value: '全部收支' }, { value: '支出' }, { value: '收入' }]).onSelect((index: number) => { this.typeIndex = index; })
         Select(this.options(true, true)).onSelect((index: number) => { this.accountId = index === 0 ? '' : this.state.data.accounts[index - 1].id; })
         Select(this.options(false, true)).onSelect((index: number) => { this.categoryId = index === 0 ? '' : this.state.data.categories[index - 1].id; })
@@ -140,22 +146,41 @@ export struct DetailsPage {
         TextInput({ text: this.end, placeholder: '结束日期 YYYY-MM-DD（含）' }).onChange((value: string) => { this.end = value; })
         TextInput({ text: this.min, placeholder: '最小金额（元）' }).onChange((value: string) => { this.min = value; })
         TextInput({ text: this.max, placeholder: '最大金额（元）' }).onChange((value: string) => { this.max = value; })
-        Button('应用筛选').onClick(() => this.search())
-        Button('重置筛选').onClick(() => {
+        Button('应用筛选').backgroundColor(FinanceTheme.text).onClick(() => this.search())
+        Button('重置筛选').backgroundColor('#EAEAEA').fontColor(FinanceTheme.text).onClick(() => {
           this.keyword = ''; this.typeIndex = 0; this.accountId = ''; this.categoryId = '';
           this.start = ''; this.end = ''; this.min = ''; this.max = ''; this.search();
         })
-        Text(`共${this.count}笔 · 收¥${money(this.income)} · 支¥${money(this.expense)}`).fontSize(14)
+        }.padding(20).width('100%').backgroundColor('#FFFFFF').borderRadius(24)
+        }
+        if (!this.showFilters) { Button('搜索').backgroundColor(FinanceTheme.text).onClick(() => this.search()) }
+        Column({ space: 12 }) {
+          Text(`筛选结果 · ${this.count} 笔`).fontSize(12).fontColor('#C8C8C8')
+          Text(`¥ ${money(this.income - this.expense)}`).fontSize(32).fontWeight(FontWeight.Bold).fontColor('#FFFFFF')
+          Text(`↙ 收入 ¥${money(this.income)}     ↗ 支出 ¥${money(this.expense)}`).fontSize(13).fontColor('#DDDDDD')
+        }.alignItems(HorizontalAlign.Start).padding(24).width('100%').borderRadius(28)
+          .linearGradient({ angle: 120, colors: [['#353535', 0], ['#101010', 1]] })
+        Text('交易记录').fontSize(19).fontWeight(FontWeight.Bold).width('100%').margin({ top: 12 })
         if (this.rows.length === 0) { Text('暂无符合条件的账单').fontColor(FinanceTheme.muted) }
         ForEach(this.rows, (row: LedgerEntry, index: number) => {
           if (index === 0 || this.rows[index - 1].date !== row.date) {
             Text(`${row.date} · ${this.dayTotal(row.date)}`).fontSize(13).width('100%')
           }
-          Button(`${row.time} ${this.state.data.categories.find((item) => item.id === row.categoryId)?.name || ''} · ${this.state.data.accounts.find((item) => item.id === row.accountId)?.name || ''} · ${row.type === 'income' ? '+' : '-'}¥${money(row.amountCents)}`)
-            .fontSize(14).width('100%').backgroundColor('#FFFFFF')
-            .fontColor(row.type === 'income' ? FinanceTheme.income : FinanceTheme.expense).onClick(() => this.open(row))
+          Button({ type: ButtonType.Normal }) {
+            Row({ space: 12 }) {
+              Text(row.type === 'income' ? '↙' : '↗').fontSize(21).fontColor(FinanceTheme.text)
+                .width(42).height(42).textAlign(TextAlign.Center).backgroundColor('#F2F2F2').borderRadius(14)
+              Column({ space: 5 }) {
+                Text(this.state.data.categories.find((item) => item.id === row.categoryId)?.name || '未分类').fontSize(15).fontWeight(FontWeight.Medium).fontColor(FinanceTheme.text)
+                Text(`${row.time} · ${this.state.data.accounts.find((item) => item.id === row.accountId)?.name || ''}`).fontSize(12).fontColor(FinanceTheme.muted)
+                if (row.note) { Text(row.note).fontSize(12).fontColor(FinanceTheme.muted).maxLines(1).textOverflow({ overflow: TextOverflow.Ellipsis }) }
+              }.layoutWeight(1).alignItems(HorizontalAlign.Start)
+              Text(`${row.type === 'income' ? '+' : '−'}¥${money(row.amountCents)}`).fontSize(16).fontWeight(FontWeight.Bold)
+                .fontColor(row.type === 'income' ? FinanceTheme.income : FinanceTheme.text).maxLines(1)
+            }.padding(16).width('100%')
+          }.width('100%').borderRadius(20).backgroundColor('#FFFFFF').onClick(() => this.open(row))
         }, (row: LedgerEntry) => row.id)
-        if (this.next !== null) { Button('加载更多').onClick(() => this.fetch(true)) }
+        if (this.next !== null) { Button(this.loading ? '加载中…' : '加载更多').enabled(!this.loading).backgroundColor(FinanceTheme.text).onClick(() => this.fetch(true)) }
       }
       if (this.error) { Text(this.error).fontColor(FinanceTheme.expense) }
     }.width('100%').id('finance-page-details')

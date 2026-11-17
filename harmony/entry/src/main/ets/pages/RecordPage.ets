@@ -1,3 +1,4 @@
+import { FinanceHeader } from '../components/FinanceHeader';
 import { AppState } from '../state/AppState';
 import { FinanceTheme } from '../theme/FinanceTheme';
 import { Account, Category, EntryType } from '../model/LedgerModels';
@@ -60,16 +61,26 @@ export struct RecordPage {
   }
   build() {
     Column({ space: 16 }) {
-      Text('记一笔').fontSize(28).fontWeight(FontWeight.Bold).width('100%')
+      FinanceHeader({ title: '记一笔', subtitle: 'DAILY LEDGER · 每日收支' })
       Row({ space: 12 }) {
         Button('支出').backgroundColor(!this.income ? FinanceTheme.text : '#767676')
           .onClick(() => { this.income = false; this.categoryId = ''; })
         Button('收入').backgroundColor(this.income ? FinanceTheme.text : '#767676')
           .onClick(() => { this.income = true; this.categoryId = ''; })
       }
+      Column({ space: 10 }) {
+        Text(this.income ? '收入金额 / CNY' : '支出金额 / CNY').fontSize(12).fontColor('#C8C8C8')
+        Row({ space: 8 }) {
+          Text('¥').fontSize(28).fontColor('#FFFFFF')
+          TextInput({ placeholder: '0.00', text: this.amount }).id('record-amount').type(InputType.Normal).fontSize(38)
+            .fontColor('#FFFFFF').placeholderColor('#999999').backgroundColor(Color.Transparent).layoutWeight(1)
+            .onChange((value: string) => { this.amount = value; this.onDirty(); })
+        }
+        Text('记录当下，清晰掌握每一笔').fontSize(12).fontColor('#A9A9A9')
+      }.alignItems(HorizontalAlign.Start).padding(24).width('100%').borderRadius(28)
+        .linearGradient({ angle: 120, colors: [['#353535', 0], ['#101010', 1]] })
       Column({ space: 16 }) {
-        TextInput({ placeholder: '金额 0.00', text: this.amount }).id('record-amount').type(InputType.Normal).fontSize(30)
-          .onChange((value: string) => { this.amount = value; this.onDirty(); })
+        Text('交易信息').fontSize(18).fontWeight(FontWeight.Bold).width('100%')
         if (this.state.data.accounts.length === 0) {
           Button('先创建账户').onClick(() => this.onManageAccounts())
         } else {
@@ -93,11 +104,12 @@ export struct RecordPage {
         }
         TextInput({ placeholder: '备注（选填，最多500字）', text: this.note }).maxLength(500)
           .onChange((value: string) => { this.note = value; this.onDirty(); })
-        Column({ space: 6 }) {
+        Text('输入金额').fontSize(12).fontColor(FinanceTheme.muted).width('100%')
+        Column({ space: 8 }) {
           ForEach(['123', '456', '789', '.0←'], (keys: string) => {
             Row({ space: 6 }) {
               ForEach(keys.split(''), (key: string) => {
-                Button(key).layoutWeight(1).backgroundColor('#EEEEEE').fontColor(FinanceTheme.text)
+                Button(key).layoutWeight(1).height(52).fontSize(22).borderRadius(16).backgroundColor('#F3F3F3').fontColor(FinanceTheme.text)
                   .onClick(() => { this.amount = keypadAmount(this.amount, key === '←' ? 'back' : key); this.onDirty(); })
               }, (key: string) => key)
             }
@@ -105,7 +117,7 @@ export struct RecordPage {
         }
         if (this.error) { Text(this.error).fontColor(FinanceTheme.expense) }
         if (this.feedback) { Text(this.feedback).fontColor(FinanceTheme.income) }
-        Button(this.state.saving ? '保存中…' : '保存').width('100%')
+        Button(this.state.saving ? '保存中…' : '保存这笔交易').width('100%').height(52).borderRadius(18)
           .enabled(this.state.status === 'ready' && !this.state.saving)
           .backgroundColor(FinanceTheme.text).fontColor('#FFFFFF').onClick(() => this.save())
       }.padding(20).backgroundColor(FinanceTheme.card).borderRadius(FinanceTheme.radius)
