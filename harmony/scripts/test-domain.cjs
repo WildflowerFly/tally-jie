@@ -61,4 +61,11 @@ load('entry/src/test/LegacyMigration.test.ets', {
   '@ohos/hypium': hypium, '../main/ets/model/AppData': domain,
   '../main/ets/service/LegacyMigration': migration, '../main/ets/domain/LedgerRules': rules
 }).default();
+const accounts = load('entry/src/main/ets/service/AccountService.ets', {
+  '../model/LedgerModels': models, '../domain/LedgerRules': rules, '../domain/Money': money
+});
+load('entry/src/test/Account.test.ets', {
+  '@ohos/hypium': hypium, '../main/ets/model/LedgerModels': models,
+  '../main/ets/domain/LedgerRules': rules, '../main/ets/service/AccountService': accounts
+}).default();
 console.log(`${count} domain tests passed.`);
