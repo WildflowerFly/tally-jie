@@ -1,3 +1,5 @@
+import portableBackupTest from './PortableBackup.test';
+import exchangeFormatsTest from './ExchangeFormats.test';
 import localUnitTest from './LocalUnit.test';
 import ledgerDomainTest from './LedgerDomain.test';
 import legacyMigrationTest from './LegacyMigration.test';
@@ -30,4 +32,6 @@ export default function testsuite() {
   entryQueryTest();
   chartsTest();
   cardsTest();
+  portableBackupTest();
+  exchangeFormatsTest();
 }

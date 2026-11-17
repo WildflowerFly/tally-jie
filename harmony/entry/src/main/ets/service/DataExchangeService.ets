@@ -6,14 +6,21 @@ import { encodeCsv, decodeCsv } from '../domain/CsvCodec';
 export interface ExchangeDocument { format: string; version: number; data: LedgerData; }
 export interface ImportPreview { data: LedgerData; added: number; duplicates: number; }
 interface Identified { id: string; }
+function equalEntity<T extends Identified>(left: T, right: T): boolean {
+  // Parsing into the same field order avoids false conflicts from JSON object key order.
+  const keys = Object.keys(left).sort();
+  if (JSON.stringify(keys) !== JSON.stringify(Object.keys(right).sort())) { return false; }
+  return JSON.stringify(left, keys) === JSON.stringify(right, keys);
+}
 function mergeRows<T extends Identified>(target: T[], source: T[]): number {
   let duplicates = 0;
+  const existing = new Map<string, T>(); target.forEach((row: T) => { existing.set(row.id, row); });
   source.forEach((row: T) => {
-    const old = target.find((item: T) => item.id === row.id);
+    const old = existing.get(row.id);
     if (old !== undefined) {
-      if (JSON.stringify(old) !== JSON.stringify(row)) { throw new Error(`IMPORT_CONFLICT:${row.id}`); }
+      if (!equalEntity(old, row)) { throw new Error(`IMPORT_CONFLICT:${row.id}`); }
       duplicates++;
-    } else { target.push(row); }
+    } else { target.push(row); existing.set(row.id, row); }
   }); return duplicates;
 }
 export function exportJson(data: LedgerData, range: DateRange | null = null): string {
@@ -28,7 +35,7 @@ export function exportJson(data: LedgerData, range: DateRange | null = null): st
   return JSON.stringify(doc, null, 2);
 }
 export function previewJson(current: LedgerData, text: string): ImportPreview {
-  if (text.length > 8 * 1024 * 1024) { throw new Error('IMPORT_TOO_LARGE'); }
+  if (text.length > 16 * 1024 * 1024) { throw new Error('IMPORT_TOO_LARGE'); }
   const doc = JSON.parse(text) as ExchangeDocument;
   if (doc.format !== 'TallyJie-Ledger' || doc.version !== 2) { throw new Error('UNSUPPORTED_IMPORT'); }
   validateLedger(doc.data);

@@ -1,3 +1,4 @@
+import { ExchangeFiles } from '../service/ExchangeFiles';
 import { common } from '@kit.AbilityKit';
 import { relationalStore } from '@kit.ArkData';
 import { LedgerData, emptyLedger, LedgerFilter } from '../model/LedgerModels';
@@ -31,6 +32,7 @@ export class AppState {
         if (ticket !== this.generation) { opened.close(); return; }
         this.store = opened; this.repository = new LedgerRepository(opened);
       }
+      await new ExchangeFiles(context).recover(this.repository);
       const result = await new LegacyMigrationService(context, this.repository).start(inputs);
       if (ticket !== this.generation) { return; }
       if (result.snapshot === null) {
@@ -47,14 +49,22 @@ export class AppState {
     if (this.status !== 'ready' || this.repository === undefined) { throw new Error('NOT_READY'); }
     return this.repository.query(filter);
   }
+  async hasImportSource(fingerprint: string): Promise<boolean> {
+    if (this.repository === undefined) { throw new Error('NOT_READY'); }
+    return this.repository.hasSource(fingerprint);
+  }
+  async recoverExchange(): Promise<void> {
+    if (this.repository === undefined || this.context === undefined) { throw new Error('NOT_READY'); }
+    await new ExchangeFiles(this.context).recover(this.repository);
+  }
   // Pages never update data optimistically. A failed save keeps the committed view and form input.
-  async commit(next: LedgerData): Promise<boolean> {
+  async commit(next: LedgerData, fingerprint: string = ''): Promise<boolean> {
     const repository = this.repository;
     if (this.status !== 'ready' || this.saving || repository === undefined) { return false; }
     const ticket = this.generation;
     this.saving = true; this.message = '';
     try {
-      const snapshot = await repository.save(next, this.revision);
+      const snapshot = await repository.save(next, this.revision, fingerprint);
       if (ticket !== this.generation) { return false; }
       this.data = snapshot.data; this.revision = snapshot.revision; this.refreshVersion++;
       return true;

@@ -94,6 +94,12 @@ export class LedgerRepository {
       } catch (error) { this.store.rollBack(); throw error as Error; }
     });
   }
+  hasSource(fingerprint: string): Promise<boolean> {
+    return this.enqueue(async () => {
+      const rows = await this.store.querySql('SELECT id FROM import_sources WHERE fingerprint=?', [fingerprint]);
+      try { return rows.goToFirstRow(); } finally { rows.close(); }
+    });
+  }
   archive(): Promise<string | undefined> { return this.enqueue(() => this.meta('legacy_archive')); }
   private async replace(data: LedgerData): Promise<void> {
     const tables: string[] = ['entry_assets', 'entries', 'transfers', 'budgets', 'attachments', 'categories', 'accounts'];
@@ -166,7 +172,7 @@ export class LedgerRepository {
     await this.removeMissing('accounts', before.accounts, after.accounts);
   }
   // Candidate copy is taken before awaiting, so caller edits cannot race an in-flight write.
-  save(data: LedgerData, expectedRevision: number): Promise<LedgerSnapshot> {
+  save(data: LedgerData, expectedRevision: number, fingerprint: string = ''): Promise<LedgerSnapshot> {
     const candidate: LedgerData = JSON.parse(JSON.stringify(data)) as LedgerData;
     validateLedger(candidate);
     return this.enqueue(async () => {
@@ -174,9 +180,14 @@ export class LedgerRepository {
       try {
         const current = await this.meta('revision');
         if (current === undefined || Number(current) !== expectedRevision) { throw new Error('STALE_WRITE'); }
+        if (fingerprint) {
+          const source = await this.store.querySql('SELECT id FROM import_sources WHERE fingerprint=?', [fingerprint]);
+          try { if (source.goToFirstRow()) { throw new Error('SOURCE_ALREADY_IMPORTED'); } } finally { source.close(); }
+        }
         const before = this.committed?.revision === expectedRevision ? this.committed : await this.read();
         if (before === undefined) { throw new Error('NOT_INITIALIZED'); }
         await this.update(before.data, candidate);
+        if (fingerprint) { await this.store.executeSql('INSERT INTO import_sources VALUES (?,?,?)', [fingerprint, fingerprint, new Date().toISOString()]); }
         if (this.fault !== undefined) { this.fault(); }
         const revision = expectedRevision + 1;
         if (!Number.isSafeInteger(revision)) { throw new Error('INVALID_REVISION'); }

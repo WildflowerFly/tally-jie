@@ -138,4 +138,15 @@ const geometry = load('entry/src/main/ets/domain/ChartGeometry.ets', {});
 load('entry/src/test/Charts.test.ets', { '@ohos/hypium': hypium, '../main/ets/domain/ChartGeometry': geometry }).default();
 const cards = load('entry/src/main/ets/domain/CardLayout.ets', {});
 load('entry/src/test/Cards.test.ets', { '@ohos/hypium': hypium, '../main/ets/domain/CardLayout': cards }).default();
+const formats = load('entry/src/main/ets/service/ExchangeFormats.ets', {
+  '../model/LedgerModels': models, './DataExchangeService': exchange,
+  '../domain/CsvCodec': csvCodec, '../domain/LedgerRules': rules, '../domain/Money': money, '../domain/DateRange': dates
+});
+load('entry/src/test/ExchangeFormats.test.ets', {
+  '@ohos/hypium': hypium, '../main/ets/model/LedgerModels': models,
+  '../main/ets/service/AccountService': accounts, '../main/ets/service/CategoryService': categories,
+  '../main/ets/service/ExchangeFormats': formats
+}).default();
+const portable = load('entry/src/main/ets/service/PortableBackup.ets', { '../model/LedgerModels': models, './DataExchangeService': exchange, '../domain/LedgerRules': rules });
+load('entry/src/test/PortableBackup.test.ets', { '@ohos/hypium': hypium, '../main/ets/model/LedgerModels': models, '../main/ets/service/PortableBackup': portable }).default();
 console.log(`${count} domain tests passed.`);
