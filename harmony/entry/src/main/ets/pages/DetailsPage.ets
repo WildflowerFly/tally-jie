@@ -10,6 +10,7 @@ import { money } from '../model/AppData';
 export struct DetailsPage {
   @ObjectLink state: AppState;
   @Prop initialFilter: LedgerFilter = defaultFilter();
+  onBudgets: () => void = () => {};
   @State keyword: string = '';
   @State typeIndex: number = 0;
   @State accountId: string = '';
@@ -98,6 +99,7 @@ export struct DetailsPage {
   build() {
     Column({ space: 12 }) {
       Text('明细').fontSize(28).fontWeight(FontWeight.Bold).width('100%')
+      Button('预算管理').onClick(() => this.onBudgets())
       if (this.selected) {
         Text('账单详情 / 编辑').fontSize(20)
         Text(`创建时间：${this.state.data.entries.find((row) => row.id === this.selected)?.createdAt || '历史数据未记录'}`).fontSize(13)
