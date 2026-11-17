@@ -23,6 +23,14 @@ harmony/
 └── scripts/test-domain.cjs             # 无设备领域测试运行器
 ```
 
+## PRD 改造实施入口（2026-11-17）
+
+新版个人记账需求实施计划见 [HarmonyOS 实施任务清单](harmony-implementation-plan.md)，未决规则见 [决策记录](harmony-decisions.md)，本轮验证证据及设备用例见 [验收记录](harmony-acceptance.md)。本节以下“当前实现”仍描述旧版实际能力，不代表新 PRD 已实现。
+
+Task 1 本轮复验：DevEco Studio `26.0.0.865`，SDK 包 `26.0.0.105`，Node `v24.14.1`，Hvigor `6.26.9`，OhPM `26.0.0.630`，JBR `25.0.2`。工程 target/compatible SDK 未修改。平台无关 8 项测试通过；增量 `assembleHap` 退出码 0，生成未签名 HAP，不能当成设备已验收。HDC 返回 `[Empty]`，平台集成与 UI 验收仍 blocked；不自动创建签名、删除数据或推送代码。
+
+后续按每 Task 一次提交推进，Git 格式为 `type(scope): 中文描述`。产品决策仍为 pending，不因执行授权而自动批准；现有真实数据不得用于公开测试夹具。
+
 ## 当前实现
 
 | 模块 | 支持内容 |
