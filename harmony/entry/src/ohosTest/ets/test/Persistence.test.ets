@@ -65,6 +65,26 @@ export default function persistenceTest() {
         expect((await repository.load())!.data.entries.length).assertEqual(10000);
       } finally { store.close(); await relationalStore.deleteRdbStore(context, name); }
     });
+    it('sourceReceiptCommitsWithDataAndRollsBackOnFailure', 0, async () => {
+      const context = abilityDelegatorRegistry.getAbilityDelegator().getAppContext();
+      const name = `ledger-source-test-${Date.now()}.db`;
+      let store = await LedgerDatabase.open(context, name);
+      try {
+        let repository = new LedgerRepository(store);
+        await repository.initialize(emptyLedger(), null);
+        const failing = new LedgerRepository(store, () => { throw new Error('INJECTED_DISK_FAILURE'); });
+        let rejected = false;
+        try { await failing.save(emptyLedger(), 1, 'source-a'); } catch (_) { rejected = true; }
+        expect(rejected).assertTrue(); expect(await repository.hasSource('source-a')).assertFalse();
+        expect((await repository.load())!.revision).assertEqual(1);
+        await repository.save(emptyLedger(), 1, 'source-a');
+        store.close(); store = await LedgerDatabase.open(context, name); repository = new LedgerRepository(store);
+        expect(await repository.hasSource('source-a')).assertTrue();
+        rejected = false;
+        try { await repository.save(emptyLedger(), 2, 'source-a'); } catch (_) { rejected = true; }
+        expect(rejected).assertTrue(); expect((await repository.load())!.revision).assertEqual(2);
+      } finally { store.close(); await relationalStore.deleteRdbStore(context, name); }
+    });
     it('foreignKeysRejectDanglingRows', 0, async () => {
       const context = abilityDelegatorRegistry.getAbilityDelegator().getAppContext();
       const name = `ledger-fk-test-${Date.now()}.db`;
