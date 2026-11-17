@@ -4,6 +4,7 @@ import legacyMigrationTest from './LegacyMigration.test';
 import accountTest from './Account.test';
 import categoryTest from './Category.test';
 import transactionTest from './Transaction.test';
+import queryTest from './Query.test';
 
 export default function testsuite() {
   localUnitTest();
@@ -12,4 +13,5 @@ export default function testsuite() {
   accountTest();
   categoryTest();
   transactionTest();
+  queryTest();
 }

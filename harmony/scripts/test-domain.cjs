@@ -82,4 +82,11 @@ load('entry/src/test/Transaction.test.ets', {
   '@ohos/hypium': hypium, '../main/ets/model/LedgerModels': models,
   '../main/ets/service/TransactionService': transactions
 }).default();
+const queries = load('entry/src/main/ets/service/LedgerQueryService.ets', {
+  '../model/LedgerModels': models, '../domain/LedgerRules': rules, '../domain/Money': money
+});
+load('entry/src/test/Query.test.ets', {
+  '@ohos/hypium': hypium, '../main/ets/model/LedgerModels': models,
+  '../main/ets/service/LedgerQueryService': queries
+}).default();
 console.log(`${count} domain tests passed.`);
