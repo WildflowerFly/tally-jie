@@ -9,6 +9,7 @@ import statisticsTest from './Statistics.test';
 import budgetTest from './Budget.test';
 import transferTest from './Transfer.test';
 import exchangeTest from './Exchange.test';
+import ledgerIntegrationTest from './LedgerIntegration.test';
 
 export default function testsuite() {
   localUnitTest();
@@ -22,4 +23,5 @@ export default function testsuite() {
   budgetTest();
   transferTest();
   exchangeTest();
+  ledgerIntegrationTest();
 }

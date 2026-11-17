@@ -4,7 +4,19 @@
 
 TallyJie 是一款本地优先生活记录应用。Android 和 iOS 使用 Flutter 开发；`harmony/` 提供独立的 **HarmonyOS 原生版（ArkTS + ArkUI）**，运行方式与当前功能差异见 [鸿蒙端开发说明](docs/harmony-development.md)。
 
-## 主要功能
+## HarmonyOS 原生端（本轮重构）
+
+Harmony 现按本地个人账本实现，默认记账，五入口为统计、明细、记账、存款、我的：
+
+- 动态账户/分类、初始余额、收支编辑删除；仅信用卡账户允许负余额。
+- 组合检索与游标分页展示、周/月/年/自定义统计及列表下钻、总/分类预算。
+- 账户滑动卡片、余额及最近记录、独立转账和信用卡还款。
+- CSV/JSON 最小预览合并导入导出，**尚非完整附件备份**；规范见[数据交换说明](docs/harmony-import-export.md)。
+- 日记/外观设置不再提供；旧迁移源文件保留，不自动删除。
+
+**状态：Implementing，非已验收发行版。** 数据库分页优化、图表精细交互/层叠视觉、完整导出、设备故障与性能验收仍有缺口，详见[实施计划](docs/harmony-implementation-plan.md)及[验收记录](docs/harmony-acceptance.md)。当前产物未签名，不能把编译成功当作可直接安装上线。
+
+## Flutter Android / iOS 主要功能
 
 - **日记**：按日期浏览、多篇日记、心情与天气、定位、多图附件、编辑与删除。
 - **记账**：收入与支出、分类与账户、消费凭证、月度预算与超支提醒。
@@ -13,7 +25,7 @@ TallyJie 是一款本地优先生活记录应用。Android 和 iOS 使用 Flutte
 - **本地备份**：导出 ZIP 备份，恢复 TallyJie ZIP/JSON 数据与附件。
 
 > [!WARNING]
-> 导入备份会替换当前本地数据，请先导出现有数据。
+> Flutter 导入备份会替换当前本地数据，请先导出现有数据。Harmony 新账本交换采用预览合并，协议与 Flutter 备份不同，不可混用。
 
 ## 项目结构
 

@@ -119,4 +119,12 @@ load('entry/src/test/Exchange.test.ets', {
   '@ohos/hypium': hypium, '../main/ets/model/LedgerModels': models,
   '../main/ets/domain/CsvCodec': csvCodec, '../main/ets/service/DataExchangeService': exchange
 }).default();
+load('entry/src/test/LedgerIntegration.test.ets', {
+  '@ohos/hypium': hypium, '../main/ets/model/LedgerModels': models,
+  '../main/ets/service/AccountService': accounts, '../main/ets/service/CategoryService': categories,
+  '../main/ets/service/TransactionService': transactions, '../main/ets/service/TransferService': transfers,
+  '../main/ets/service/BudgetService': budget, '../main/ets/domain/LedgerRules': rules,
+  '../main/ets/service/DataExchangeService': exchange, '../main/ets/service/LedgerQueryService': queries,
+  '../main/ets/service/StatisticsService': stats
+}).default();
 console.log(`${count} domain tests passed.`);
