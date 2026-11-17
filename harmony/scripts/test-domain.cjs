@@ -103,4 +103,11 @@ load('entry/src/test/Budget.test.ets', {
   '@ohos/hypium': hypium, '../main/ets/model/LedgerModels': models,
   '../main/ets/service/BudgetService': budget
 }).default();
+const transfers = load('entry/src/main/ets/service/TransferService.ets', {
+  '../model/LedgerModels': models, '../domain/Money': money, '../domain/LedgerRules': rules
+});
+load('entry/src/test/Transfer.test.ets', {
+  '@ohos/hypium': hypium, '../main/ets/model/LedgerModels': models,
+  '../main/ets/service/TransferService': transfers, '../main/ets/domain/LedgerRules': rules
+}).default();
 console.log(`${count} domain tests passed.`);

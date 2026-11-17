@@ -5,12 +5,14 @@ import { addCents } from '../domain/Money';
 import { defaultFilter, queryEntries } from '../service/LedgerQueryService';
 import { money } from '../model/AppData';
 import { FinanceTheme } from '../theme/FinanceTheme';
+import { TransferPage } from './TransferPage';
 @Component
 export struct DepositsPage {
   @ObjectLink state: AppState;
   onDetails: (filter: LedgerFilter) => void = () => {};
   onManage: () => void = () => {};
   @State index: number = 0;
+  @State showTransfers: boolean = false;
   private current(): Account | undefined { return this.state.data.accounts[Math.min(this.index, this.state.data.accounts.length - 1)]; }
   private total(): number {
     return this.state.data.accounts.reduce((sum: number, row: Account) => addCents(sum, accountBalance(this.state.data, row.id)), 0);
@@ -24,6 +26,9 @@ export struct DepositsPage {
   }
   build() {
     Column({ space: 16 }) {
+      if (this.showTransfers) {
+        TransferPage({ state: this.state, accountId: this.current()?.id || '', onBack: () => { this.showTransfers = false; } })
+      } else {
       Text('存款').fontSize(28).fontWeight(FontWeight.Bold).width('100%')
       Text(`总余额 ¥${money(this.total())}`).fontSize(26)
       Text(`${this.state.data.accounts.length}个账户 · 含信用卡负余额`).fontColor(FinanceTheme.muted)
@@ -50,7 +55,9 @@ export struct DepositsPage {
         ForEach(this.recent(), (row: LedgerEntry) => {
           Text(`${row.date} ${row.time} · ${this.state.data.categories.find((item) => item.id === row.categoryId)?.name || ''} · ${row.type === 'income' ? '+' : '-'}¥${money(row.amountCents)}`)
         }, (row: LedgerEntry) => row.id)
+        Button('转账 / 转账记录').onClick(() => { this.showTransfers = true; })
         Button('查看全部账单').onClick(() => this.onDetails(this.filter()))
+      }
       }
     }.width('100%').id('finance-page-deposits')
   }
