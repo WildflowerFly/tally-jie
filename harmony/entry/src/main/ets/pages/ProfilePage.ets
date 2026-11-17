@@ -1,3 +1,4 @@
+import { FinanceHeader, FinanceMenuRow } from '../components/FinanceHeader';
 import { AppState } from '../state/AppState';
 import { FinanceTheme } from '../theme/FinanceTheme';
 import { AccountManagePage } from './AccountManagePage';
@@ -19,18 +20,23 @@ export struct ProfilePage {
       } else if (this.section === 'exchange') {
         DataExchangePage({ state: this.state, onBack: () => { this.section = ''; } })
       } else {
-      Button('导入 / 导出').onClick(() => { this.section = 'exchange'; })
-      Button('预算管理').onClick(() => { this.section = 'budgets'; })
-      Button('分类管理').onClick(() => { this.section = 'categories'; })
-      Button('账户管理').onClick(() => { this.section = 'accounts'; })
-      Text('我的').fontSize(28).fontWeight(FontWeight.Bold).width('100%')
-      Text('本地账本，无需登录').fontSize(20)
-      Text('账户、分类、预算及数据交换均在本地处理。')
-        .fontSize(14).fontColor(FinanceTheme.muted)
-      Text('日记与外观设置已下线；旧文件暂保留，不自动删除。')
-        .fontSize(14).fontColor(FinanceTheme.muted)
+      FinanceHeader({ title: '我的', subtitle: 'PERSONAL · 本地账本' })
+      Column({ space: 16 }) {
+        Text('让每一笔，都有迹可循').fontSize(21).fontWeight(FontWeight.Bold).fontColor('#FFFFFF')
+        Text('无需登录 · 数据留在本机').fontSize(13).fontColor('#C8C8C8')
+        Row({ space: 24 }) {
+          Text(`${this.state.data.accounts.length} 个账户`).fontSize(15).fontColor('#FFFFFF')
+          Text(`${this.state.data.categories.length} 个分类`).fontSize(15).fontColor('#FFFFFF')
+        }
+      }.alignItems(HorizontalAlign.Start).padding(24).width('100%').borderRadius(28)
+        .linearGradient({ angle: 120, colors: [['#363636', 0], ['#101010', 1]] })
+      Text('账本管理').fontSize(18).fontWeight(FontWeight.Bold).width('100%').margin({ top: 12 })
+      FinanceMenuRow({ title: '账户管理', detail: '初始余额、信用卡与账户关联', glyph: '▣', onOpen: () => { this.section = 'accounts'; } })
+      FinanceMenuRow({ title: '分类管理', detail: '用自己的方式整理收支', glyph: '▦', onOpen: () => { this.section = 'categories'; } })
+      FinanceMenuRow({ title: '预算管理', detail: '为每个周期设定消费边界', glyph: '◷', onOpen: () => { this.section = 'budgets'; } })
+      FinanceMenuRow({ title: '导入 / 导出', detail: '预览合并与可移植本地备份', glyph: '⇅', onOpen: () => { this.section = 'exchange'; } })
+      Text('离线使用 · 请妥善保管导出的财务文件').fontSize(12).fontColor(FinanceTheme.muted).margin({ top: 12 })
       }
-    }.padding(20).width('100%').backgroundColor(FinanceTheme.card)
-    .borderRadius(FinanceTheme.radius).id('finance-page-profile')
+    }.width('100%').id('finance-page-profile')
   }
 }
