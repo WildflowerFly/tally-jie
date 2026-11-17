@@ -11,7 +11,9 @@ import { emptyLedger } from '../../../main/ets/model/LedgerModels';
 export default function persistenceTest() {
   describe('LedgerPersistence', () => {
     it('transactionRollbackRestartAndStaleWrite', 0, async () => {
-      const context = abilityDelegatorRegistry.getAbilityDelegator().getAppContext();
+      const delegator = abilityDelegatorRegistry.getAbilityDelegator();
+      await delegator.startAbility({ bundleName: 'com.tallyjie.harmony', abilityName: 'EntryAbility' });
+      const context = (await delegator.getCurrentTopAbility()).context;
       const name = `ledger-test-${Date.now()}.db`;
       let store = await LedgerDatabase.open(context, name);
       try {
@@ -36,7 +38,9 @@ export default function persistenceTest() {
       } finally { store.close(); await relationalStore.deleteRdbStore(context, name); }
     });
     it('databasePagesTenThousandTiesAndIncrementalEditAfterRestart', 0, async () => {
-      const context = abilityDelegatorRegistry.getAbilityDelegator().getAppContext();
+      const delegator = abilityDelegatorRegistry.getAbilityDelegator();
+      await delegator.startAbility({ bundleName: 'com.tallyjie.harmony', abilityName: 'EntryAbility' });
+      const context = (await delegator.getCurrentTopAbility()).context;
       const name = `ledger-page-test-${Date.now()}.db`;
       let store = await LedgerDatabase.open(context, name);
       try {
@@ -66,7 +70,9 @@ export default function persistenceTest() {
       } finally { store.close(); await relationalStore.deleteRdbStore(context, name); }
     });
     it('sourceReceiptCommitsWithDataAndRollsBackOnFailure', 0, async () => {
-      const context = abilityDelegatorRegistry.getAbilityDelegator().getAppContext();
+      const delegator = abilityDelegatorRegistry.getAbilityDelegator();
+      await delegator.startAbility({ bundleName: 'com.tallyjie.harmony', abilityName: 'EntryAbility' });
+      const context = (await delegator.getCurrentTopAbility()).context;
       const name = `ledger-source-test-${Date.now()}.db`;
       let store = await LedgerDatabase.open(context, name);
       try {
@@ -86,7 +92,9 @@ export default function persistenceTest() {
       } finally { store.close(); await relationalStore.deleteRdbStore(context, name); }
     });
     it('foreignKeysRejectDanglingRows', 0, async () => {
-      const context = abilityDelegatorRegistry.getAbilityDelegator().getAppContext();
+      const delegator = abilityDelegatorRegistry.getAbilityDelegator();
+      await delegator.startAbility({ bundleName: 'com.tallyjie.harmony', abilityName: 'EntryAbility' });
+      const context = (await delegator.getCurrentTopAbility()).context;
       const name = `ledger-fk-test-${Date.now()}.db`;
       const store = await LedgerDatabase.open(context, name);
       try {

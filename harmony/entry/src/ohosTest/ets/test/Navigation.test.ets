@@ -1,3 +1,4 @@
+import { abilityDelegatorRegistry } from '@kit.TestKit';
 import { describe, it, expect } from '@ohos/hypium';
 import { Driver, ON } from '@ohos.UiTest';
 
@@ -5,8 +6,11 @@ import { Driver, ON } from '@ohos.UiTest';
 export default function navigationTest() {
   describe('FinanceNavigation', () => {
     it('defaultsToRecordAndHasFiveOrderedDestinations', 0, async () => {
+      const delegator = abilityDelegatorRegistry.getAbilityDelegator();
+      await delegator.startAbility({ bundleName: 'com.tallyjie.harmony', abilityName: 'EntryAbility' });
       const driver = Driver.create();
-      expect((await driver.findComponent(ON.id('finance-page-record'))) !== undefined).assertTrue();
+      await driver.delayMs(2000);
+      expect((await driver.findComponent(ON.id('finance-page-record'))) !== null).assertTrue();
       const ids: string[] = ['statistics', 'details', 'record', 'deposits', 'profile'];
       let previous = -1;
       for (const id of ids) {
@@ -15,7 +19,8 @@ export default function navigationTest() {
         expect(bounds.left > previous).assertTrue(); previous = bounds.left;
       }
       await (await driver.findComponent(ON.id('finance-nav-profile'))).click();
-      expect((await driver.findComponent(ON.id('finance-page-profile'))) !== undefined).assertTrue();
+      await driver.delayMs(500);
+      expect((await driver.findComponent(ON.id('finance-page-profile'))) !== null).assertTrue();
       await (await driver.findComponent(ON.id('finance-nav-record'))).click();
     });
   });

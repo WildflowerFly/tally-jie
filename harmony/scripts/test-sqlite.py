@@ -71,4 +71,25 @@ db.execute('BEGIN')
 db.execute(entry_upsert, ['e00000', 'a', 'c', '2026-11-18', '13:00', 5, 'income', '{"id":"edited"}', 'edit'])
 db.rollback()
 assert db.execute("SELECT date,amount,note FROM entries WHERE id='e00000'").fetchone() == ('2026-11-17', 2, needle)
-print('PASS: production SQL, v2 DDL, 10000-row pagination, aggregates, literal search, index plans, incremental UPSERT and rollback')
+# Compile the production trigger templates with the production relation declarations.
+links = re.findall(r"\{ child: '([^']+)', column: '([^']+)', parent: '([^']+)' \}", source)
+templates = re.findall(r'executeSql\(`(CREATE TRIGGER [^`]+)`\)', source)
+assert len(links) == 7 and len(templates) == 3
+for child, column, parent in links:
+    variables = {'link.child': child, 'link.column': column, 'link.parent': parent, 'prefix': f'{child}_{column}'}
+    for template in templates:
+        for action in (['INSERT', 'UPDATE'] if '${action}' in template else ['']):
+            values = dict(variables, action=action)
+            values['action.toLowerCase()'] = action.lower()
+            sql = re.sub(r'\$\{([^}]+)\}', lambda match: values[match[1]], template)
+            db.execute(sql)
+db.commit()
+db.execute('PRAGMA foreign_keys=OFF')
+for sql in ["INSERT INTO entry_assets VALUES ('missing','missing')", "UPDATE entries SET account_id='missing' WHERE id='e00000'", "DELETE FROM accounts WHERE id='a'", "UPDATE accounts SET id='changed' WHERE id='a'"]:
+    try:
+        db.execute(sql)
+    except sqlite3.IntegrityError:
+        pass
+    else:
+        raise AssertionError('trigger did not protect: ' + sql)
+print('PASS: production SQL, v3 DDL/triggers with FK pragma OFF, 10000-row pagination, aggregates, literal search, index plans, incremental UPSERT and rollback')

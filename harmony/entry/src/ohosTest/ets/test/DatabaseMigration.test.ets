@@ -9,7 +9,9 @@ import { emptyData } from '../../../main/ets/model/AppData';
 export default function databaseMigrationTest() {
   describe('LedgerDatabaseMigration', () => {
     it('migrationMarkerIsAtomicAndInitializationIsIdempotent', 0, async () => {
-      const context = abilityDelegatorRegistry.getAbilityDelegator().getAppContext();
+      const delegator = abilityDelegatorRegistry.getAbilityDelegator();
+      await delegator.startAbility({ bundleName: 'com.tallyjie.harmony', abilityName: 'EntryAbility' });
+      const context = (await delegator.getCurrentTopAbility()).context;
       const name = `ledger-migration-test-${Date.now()}.db`;
       const store = await LedgerDatabase.open(context, name);
       try {
