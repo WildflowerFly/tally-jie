@@ -95,7 +95,9 @@ struct Index {
             onDetails: (filter: LedgerFilter) => { this.detailsFilter = filter; this.selected = 1; } }) }
           else if (this.selected === 1) { DetailsPage({ state: this.app, initialFilter: this.detailsFilter,
             onBudgets: () => { this.profileSection = 'budgets'; this.selected = 4; } }) }
-          else if (this.selected === 3) { DepositsPage({ state: this.app }) }
+          else if (this.selected === 3) { DepositsPage({ state: this.app,
+            onDetails: (filter: LedgerFilter) => { this.detailsFilter = filter; this.selected = 1; },
+            onManage: () => { this.profileSection = 'accounts'; this.selected = 4; } }) }
           else if (this.selected === 4) { ProfilePage({ state: this.app, section: $profileSection }) }
           RecordPage({ state: this.app, amount: $amount, note: $note,
             onDirty: () => { this.dirty = this.amount.length > 0 || this.note.length > 0; },
