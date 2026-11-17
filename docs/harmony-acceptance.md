@@ -3,7 +3,7 @@
 > 建立日期：2026-11-17  
 > 计划：`docs/harmony-implementation-plan.md`  
 > 决策与环境：`docs/harmony-decisions.md`  
-> 状态：Task 1 基线已验证；新增业务未实施，平台验收 blocked。
+> 状态：Task 1 基线、Task 2 隔离领域契约已验证；新页面及持久层未实施，平台验收 blocked。
 
 ## 1. Task 1 基线结果
 
@@ -69,6 +69,27 @@ SHA-256：`088694ec0dfc37f78e010ebfec0db0afdd61c4b7c43932cd1daa391afd730215`。
 
 ## 4. 遗留与责任
 
-- D-01～D-07：需求方/实施负责人按决策记录提供确认；Task 1 只登记和评审依赖，不代替批准。
+- 决策更新：本轮用户确认日记功能删除、仅信用卡可负、周一及自然月/周、历史余额0并提示补录、性能仅候选；其余细项按决策台账继续跟踪，不把部分确认扩展为全部批准。
 - V-03：设备负责人提供兼容设备、有效本机签名；在此之前不能执行数据库平台探针、文件选择器或 UI 集成测试。
-- Task 2～14：未实施；仅允许先做不依赖未决规则的隔离部分，不能跨闸门完成验收。
+- Task 2：隔离领域契约已完成；Task 3～14：未实施，不能跨闸门完成验收。
+
+## 5. Task 2：领域契约与规则
+
+执行日期2026-11-17，父提交 `5530072`，工具链沿用 Task 1。本次无需平台 API，未写入用户文件。新增 `LedgerModels/Money/DateRange/LedgerRules` 和数据契约文档；v1 类型及旧页面行为不变。仅信用卡可负的规则已在 v2 领域层实现，尚未接到旧页面。
+
+| 阶段 | 命令/检查 | 实际结果 |
+| --- | --- | --- |
+| 测试先行 | V-01，带可加载的测试桩 | 旧8项通过；`decimalAmountsAreIntegerCents` 报 `AssertionError [ERR_ASSERTION]`，`0 !== 30`，退出码1；不是模块加载失败 |
+| 实现后 | V-01 | 发现一例测试把 credit 账户误当普通账户，按普通账户场景修正 type 后通过；随后补充删除收入/转入、附件/时间戳测试 |
+| 编译覆盖校正 | V-02 | 初次未引用的新模块不作为已编译证据；通过 AppData 显式重导出纳入实际应用依赖 |
+| ArkTS修复 | V-02 | `Structural typing is not supported (arkts-no-structural-typing)`，`LedgerRules.ets` 原96行：直接将 BudgetRule 传给 DateRange；改为显式构造日期范围后复验 |
+| 最终领域测试 | V-01 | **21 domain tests passed.**，原8项+新增13项，退出码0 |
+| 最终应用构建 | V-02，assembleHap --no-daemon | **BUILD SUCCESSFUL in 7 s 224 ms**，33 tasks：17 executed/16 up-to-date；退出码0 |
+| 静态检查 | git diff --check、Task2步骤/文档链接检查 | PASS |
+| 平台/设备 | V-03 | 未执行，环境仍 blocked；没有把 Node 测试当作设备测试 |
+
+新增13项：`decimalAmountsAreIntegerCents`、`rejectsInvalidAmountSyntaxAndOverflow`、`onlyCreditInitialBalanceMayBeNegative`、`calendarDatesAndMondayWeekAreStable`、`balancesTransfersAndRenameUseStableIds`、`rejectsReferencesDuplicatesAndCategoryMismatch`、`negativeStandardBalanceIsRejectedAfterEveryMutation`、`removingIncomeOrIncomingTransferCannotOverdrawStandardAccount`、`entityIdentityAndHistoricalAttachmentsArePreserved`、`transferAndBalanceOverflowAreRejected`、`budgetPeriodShapeIsCheckedWithoutFreezingPendingOverlapPolicy`、`legacyInitialZeroRequiresExplicitPromptAndDoesNotBypassBalanceRule`、`filterRangeCursorAndAmountsAreValidated`。
+
+遗留警告：旧 DataStore/Index 的 `Function may throw exceptions. Special handling is required.` 仍存在；未签名警告仍存在。测试注册已同步 Hypium List，但本次只运行 Node 适配器，未执行 IDE Hypium 目标。产物为未签名 HAP，不提交生成文件。
+
+迁移风险已记录：初始余额0与普通账户不得负不能互相绕过。历史净支出账户须保留旧文件并等待用户补录，Task 3/5 设计恢复阶段，不伪造收入也不自动改信用卡类型。预算重叠/自动复用、日均分母、导入归档策略及性能阈值仍未冻结。

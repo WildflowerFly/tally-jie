@@ -1,3 +1,12 @@
+// Legacy v1 contract, retained unchanged for existing screens and migration input.
+// New ledger/domain code uses LedgerModels.ets (v2); never cast a v1 payload to v2.
+// Diary here is compatibility data, not authorization to keep diary UI in the new product.
+// Export the new contract explicitly so the application build also compiles the isolated rules.
+export { emptyLedger } from './LedgerModels';
+export { parseAmount, parseInitialBalance, addCents } from '../domain/Money';
+export { calendarWeek, calendarMonth, rangeDays } from '../domain/DateRange';
+export { validateLedger, validateFilter } from '../domain/LedgerRules';
+
 export interface Transaction {
   id: string;
   type: string;

@@ -34,9 +34,23 @@ function load(relative, dependencies) {
   }, { filename });
   return module.exports;
 }
-const domain = load('entry/src/main/ets/model/AppData.ets', {});
+const models = load('entry/src/main/ets/model/LedgerModels.ets', {});
+const money = load('entry/src/main/ets/domain/Money.ets', { '../model/LedgerModels': models });
+const dates = load('entry/src/main/ets/domain/DateRange.ets', { '../model/LedgerModels': models });
+const rules = load('entry/src/main/ets/domain/LedgerRules.ets', {
+  '../model/LedgerModels': models, './Money': money, './DateRange': dates
+});
+const domain = load('entry/src/main/ets/model/AppData.ets', {
+  './LedgerModels': models, '../domain/Money': money, '../domain/DateRange': dates,
+  '../domain/LedgerRules': rules
+});
 load('entry/src/test/LocalUnit.test.ets', {
   '@ohos/hypium': hypium,
   '../main/ets/model/AppData': domain
+}).default();
+load('entry/src/test/LedgerDomain.test.ets', {
+  '@ohos/hypium': hypium, '../main/ets/model/LedgerModels': models,
+  '../main/ets/domain/Money': money, '../main/ets/domain/DateRange': dates,
+  '../main/ets/domain/LedgerRules': rules
 }).default();
 console.log(`${count} domain tests passed.`);
