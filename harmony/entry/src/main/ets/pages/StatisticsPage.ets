@@ -1,3 +1,4 @@
+import { FinanceCharts } from '../components/FinanceCharts';
 import { AppState } from '../state/AppState';
 import { FinanceTheme } from '../theme/FinanceTheme';
 import { DateRange, EntryType, LedgerFilter } from '../model/LedgerModels';
@@ -15,11 +16,12 @@ export struct StatisticsPage {
   @State unit: TrendUnit = 'day';
   @State result: StatisticsResult = { incomeCents: 0, expenseCents: 0, netCents: 0, averageExpenseCents: 0, categories: [], trend: [], highestDays: [], highestCategories: [] };
   @State error: string = '';
+  private appliedIncome: boolean = false;
   private appliedStart: string = this.start;
   private appliedEnd: string = this.end;
   aboutToAppear(): void { this.refresh(); }
   private refresh(): void {
-    try { this.result = statistics(this.state.data, { startDate: this.start, endDate: this.end }, this.income ? 'income' : 'expense', this.unit); this.appliedStart = this.start; this.appliedEnd = this.end; this.error = ''; }
+    try { this.result = statistics(this.state.data, { startDate: this.start, endDate: this.end }, this.income ? 'income' : 'expense', this.unit); this.appliedIncome = this.income; this.appliedStart = this.start; this.appliedEnd = this.end; this.error = ''; }
     catch (error) { this.error = (error as Error).message; }
   }
   private period(index: number): void {
@@ -30,11 +32,6 @@ export struct StatisticsPage {
   private drill(type: EntryType, category: string = '', start: string = this.appliedStart, end: string = this.appliedEnd): void {
     const filter = defaultFilter(); filter.type = type; filter.range = { startDate: start, endDate: end };
     filter.categoryIds = category ? [category] : []; this.onDetails(filter);
-  }
-  private ringValues(): number[] {
-    const values = this.result.categories.slice(0, 8).map((row: CategoryStat) => row.percent);
-    const other = this.result.categories.slice(8).reduce((sum: number, row: CategoryStat) => sum + row.percent, 0);
-    if (other > 0) { values.push(other); } return values;
   }
   build() {
     Column({ space: 12 }) {
@@ -47,7 +44,7 @@ export struct StatisticsPage {
       TextInput({ text: this.start, placeholder: '开始日期 YYYY-MM-DD' }).onChange((value: string) => { this.start = value; })
       TextInput({ text: this.end, placeholder: '结束日期 YYYY-MM-DD' }).onChange((value: string) => { this.end = value; })
       Button('应用自定义范围').onClick(() => this.refresh())
-      Text(`${this.start} 至 ${this.end}`).fontSize(13)
+      Text(`${this.appliedStart} 至 ${this.appliedEnd}`).fontSize(13)
       if (this.error) { Text(this.error).fontColor(FinanceTheme.expense) }
       Button(`收入 ¥${money(this.result.incomeCents)}`).fontColor(FinanceTheme.income).backgroundColor('#FFFFFF').onClick(() => this.drill('income'))
       Button(`支出 ¥${money(this.result.expenseCents)}`).fontColor(FinanceTheme.expense).backgroundColor('#FFFFFF').onClick(() => this.drill('expense'))
@@ -61,22 +58,14 @@ export struct StatisticsPage {
         this.unit = index === 0 ? 'day' : index === 1 ? 'week' : 'month'; this.refresh();
       })
       if (this.result.categories.length === 0) { Text('当前范围暂无数据').fontColor(FinanceTheme.muted) }
-      else {
-        DataPanel({ values: this.ringValues(), max: 100, type: DataPanelType.Circle })
-          .width(160).height(160).accessibilityText('分类占比，完整金额及下钻见下方列表')
-      }
+      FinanceCharts({ categories: this.result.categories, trend: this.result.trend,
+        onCategory: (id: string) => this.drill(this.appliedIncome ? 'income' : 'expense', id),
+        onBucket: (row: StatBucket) => this.drill(this.appliedIncome ? 'income' : 'expense', '', row.startDate, row.endDate) })
       ForEach(this.result.categories, (row: CategoryStat) => {
         Button(`${row.name} · ¥${money(row.amountCents)} · ${row.percent.toFixed(1)}%`).width('100%')
-          .onClick(() => this.drill(this.income ? 'income' : 'expense', row.id))
+          .onClick(() => this.drill(this.appliedIncome ? 'income' : 'expense', row.id))
       }, (row: CategoryStat) => row.id)
-      Text('趋势（点击日期查看明细）').fontSize(18)
-      ForEach(this.result.trend, (row: StatBucket) => {
-        Column({ space: 4 }) {
-          Button(`${row.startDate}${row.endDate === row.startDate ? '' : ' ~ ' + row.endDate} · ¥${money(row.amountCents)}`)
-            .width('100%').fontSize(13).onClick(() => this.drill(this.income ? 'income' : 'expense', '', row.startDate, row.endDate))
-          Progress({ value: row.amountCents, total: Math.max(1, this.income ? this.result.incomeCents : this.result.expenseCents), type: ProgressType.Linear }).width('100%')
-        }
-      }, (row: StatBucket) => row.key)
+
     }.width('100%').id('finance-page-statistics')
   }
 }

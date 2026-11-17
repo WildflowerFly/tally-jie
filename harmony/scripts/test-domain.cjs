@@ -134,4 +134,6 @@ load('entry/src/test/EntryQuery.test.ets', {
   '@ohos/hypium': hypium, '../main/ets/repository/EntryQuery': entrySql,
   '../main/ets/service/LedgerQueryService': queries
 }).default();
+const geometry = load('entry/src/main/ets/domain/ChartGeometry.ets', {});
+load('entry/src/test/Charts.test.ets', { '@ohos/hypium': hypium, '../main/ets/domain/ChartGeometry': geometry }).default();
 console.log(`${count} domain tests passed.`);
