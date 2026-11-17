@@ -5,6 +5,7 @@ import accountTest from './Account.test';
 import categoryTest from './Category.test';
 import transactionTest from './Transaction.test';
 import queryTest from './Query.test';
+import statisticsTest from './Statistics.test';
 
 export default function testsuite() {
   localUnitTest();
@@ -14,4 +15,5 @@ export default function testsuite() {
   categoryTest();
   transactionTest();
   queryTest();
+  statisticsTest();
 }

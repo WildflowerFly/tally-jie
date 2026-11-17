@@ -8,6 +8,8 @@ import { RecordPage } from './RecordPage';
 import { DepositsPage } from './DepositsPage';
 import { ProfilePage } from './ProfilePage';
 import { InitialBalanceInput } from '../service/LegacyMigration';
+import { LedgerFilter } from '../model/LedgerModels';
+import { defaultFilter } from '../service/LedgerQueryService';
 
 @Entry
 @Component
@@ -18,6 +20,7 @@ struct Index {
   @State note: string = '';
   @State dirty: boolean = false;
   @State profileSection: string = '';
+  @State detailsFilter: LedgerFilter = defaultFilter();
   @State repairAmounts: string[] = [];
   aboutToAppear(): void { this.reload(); }
   private reload(): void {
@@ -34,6 +37,7 @@ struct Index {
       });
       return;
     }
+    if (index === 1) { this.detailsFilter = defaultFilter(); }
     this.selected = index;
   }
   onBackPress(): boolean {
@@ -87,8 +91,9 @@ struct Index {
         Column({ space: 16 }) {
           if (this.app.status !== 'ready' || this.app.message.length > 0 ||
             this.app.data.accounts.some((account) => account.needsInitialBalance)) { this.statusCard() }
-          if (this.selected === 0) { StatisticsPage({ state: this.app }) }
-          else if (this.selected === 1) { DetailsPage({ state: this.app }) }
+          if (this.selected === 0) { StatisticsPage({ state: this.app,
+            onDetails: (filter: LedgerFilter) => { this.detailsFilter = filter; this.selected = 1; } }) }
+          else if (this.selected === 1) { DetailsPage({ state: this.app, initialFilter: this.detailsFilter }) }
           else if (this.selected === 3) { DepositsPage({ state: this.app }) }
           else if (this.selected === 4) { ProfilePage({ state: this.app, section: $profileSection }) }
           RecordPage({ state: this.app, amount: $amount, note: $note,
