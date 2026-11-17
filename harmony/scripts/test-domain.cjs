@@ -68,4 +68,11 @@ load('entry/src/test/Account.test.ets', {
   '@ohos/hypium': hypium, '../main/ets/model/LedgerModels': models,
   '../main/ets/domain/LedgerRules': rules, '../main/ets/service/AccountService': accounts
 }).default();
+const categories = load('entry/src/main/ets/service/CategoryService.ets', {
+  '../model/LedgerModels': models, '../domain/LedgerRules': rules
+});
+load('entry/src/test/Category.test.ets', {
+  '@ohos/hypium': hypium, '../main/ets/model/LedgerModels': models,
+  '../main/ets/service/CategoryService': categories
+}).default();
 console.log(`${count} domain tests passed.`);
