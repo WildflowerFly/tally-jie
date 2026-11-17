@@ -1,3 +1,4 @@
+import { FinanceHeader } from '../components/FinanceHeader';
 import { AppState } from '../state/AppState';
 import { Account, AccountType } from '../model/LedgerModels';
 import { accountBalance } from '../domain/LedgerRules';
@@ -52,29 +53,31 @@ export struct AccountManagePage {
   }
   build() {
     Column({ space: 14 }) {
-      Button('返回我的').onClick(() => this.onBack())
-      Text('账户管理').fontSize(26).fontWeight(FontWeight.Bold)
+      FinanceHeader({ title: '账户管理', subtitle: 'ACCOUNTS · 资产的起点', back: true, onBack: () => this.onBack() })
       Text('余额 = 初始余额 + 收入 - 支出 + 转入 - 转出；仅信用卡允许负数。').fontSize(13)
       ForEach(this.state.data.accounts, (row: Account) => {
         Column({ space: 8 }) {
           Text(`${row.name} · ${row.type === 'credit' ? '信用卡' : '普通账户'}`).fontWeight(FontWeight.Bold)
-          Text(`当前 ¥${money(accountBalance(this.state.data, row.id))} / 初始 ¥${money(row.initialBalanceCents)}`)
+          Text(`¥ ${money(accountBalance(this.state.data, row.id))}`).fontSize(28).fontWeight(FontWeight.Bold).fontColor(FinanceTheme.text)
+          Text(`初始余额 ¥${money(row.initialBalanceCents)}`).fontSize(12).fontColor(FinanceTheme.muted)
           if (row.needsInitialBalance) { Text('历史初始余额暂为0，请补录').fontColor(FinanceTheme.expense) }
           Row({ space: 12 }) {
-            Button('编辑 / 补录').onClick(() => this.edit(row))
-            Button('删除').enabled(!this.state.saving && this.state.status === 'ready').onClick(() => this.confirmDelete(row))
+            Button('编辑 / 补录').backgroundColor(FinanceTheme.text).onClick(() => this.edit(row))
+            Button('删除').backgroundColor('#F8EDEA').fontColor(FinanceTheme.expense).enabled(!this.state.saving && this.state.status === 'ready').onClick(() => this.confirmDelete(row))
           }
         }.padding(16).width('100%').backgroundColor('#FFFFFF').borderRadius(20)
       }, (row: Account) => row.id)
-      Text(this.editingId ? '编辑账户' : '新建账户').fontSize(20)
+      Column({ space: 14 }) {
+      Text(this.editingId ? '编辑账户' : '新建账户').fontSize(20).fontWeight(FontWeight.Bold).width('100%')
       TextInput({ placeholder: '名称（最多40字）', text: this.name }).maxLength(40).onChange((value: string) => { this.name = value; })
       TextInput({ placeholder: '初始余额，留空为0', text: this.initial }).onChange((value: string) => { this.initial = value; })
       Toggle({ type: ToggleType.Checkbox, isOn: this.credit }).onChange((value: boolean) => { this.credit = value; })
       Text('信用卡账户（勾选后才允许负余额）').fontSize(13)
       if (this.error) { Text(this.error).fontColor(FinanceTheme.expense) }
-      Button(this.state.saving ? '保存中…' : '保存账户').enabled(this.state.status === 'ready' && !this.state.saving).onClick(() => this.save())
-      if (this.editingId) { Button('取消编辑').onClick(() => this.clear()) }
-      Text('删除时可选历史迁移目标（不转移初始余额）').fontSize(13)
+      Button(this.state.saving ? '保存中…' : '保存账户').width('100%').height(50).backgroundColor(FinanceTheme.text).enabled(this.state.status === 'ready' && !this.state.saving).onClick(() => this.save())
+      if (this.editingId) { Button('取消编辑').backgroundColor('#EAEAEA').fontColor(FinanceTheme.text).onClick(() => this.clear()) }
+      }.padding(20).width('100%').backgroundColor('#FFFFFF').borderRadius(24)
+      Text('高级操作 · 删除时迁移历史（不转移初始余额）').fontSize(12).fontColor(FinanceTheme.muted)
       Select(this.targets())
         .onSelect((index: number) => { this.targetId = index === 0 ? '' : this.state.data.accounts[index - 1].id; })
     }.width('100%')

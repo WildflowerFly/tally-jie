@@ -12,7 +12,7 @@ export struct FinanceCharts {
   private line: CanvasRenderingContext2D = new CanvasRenderingContext2D(new RenderingContextSettings(true));
   onCategory: (id: string) => void = () => {};
   onBucket: (bucket: StatBucket) => void = () => {};
-  private palette: string[] = ['#171717', '#269B73', '#E16C61', '#536878', '#81736A', '#707070', '#466351', '#A56551'];
+  private palette: string[] = ['#171717', '#484848', '#737373', '#999999', '#B5B5B5', '#D0D0D0', '#626262', '#858585'];
   private reset(): void { this.bucketOffset = 0; this.redraw(); }
   private visible(): StatBucket[] { return this.trend.slice(this.bucketOffset, this.bucketOffset + 14); }
   private redraw(): void { this.drawRing(); this.drawTrend(); }
@@ -42,7 +42,7 @@ export struct FinanceCharts {
       const y = trendY(row.amountCents, max, 180);
       if (index === 0) { ctx.moveTo(x, y); } else { ctx.lineTo(x, y); }
     }); ctx.stroke();
-    ctx.fillStyle = '#269B73';
+    ctx.fillStyle = '#171717';
     rows.forEach((row: StatBucket, index: number) => {
       const x = rows.length === 1 ? this.chartWidth / 2 : 20 + index * (this.chartWidth - 40) / (rows.length - 1);
       ctx.beginPath(); ctx.arc(x, trendY(row.amountCents, max, 180), 4, 0, Math.PI * 2); ctx.fill();
@@ -73,14 +73,14 @@ export struct FinanceCharts {
           }
         })
       Row({ space: 8 }) {
-        Button('前14项').enabled(this.bucketOffset > 0).onClick(() => { this.bucketOffset = Math.max(0, this.bucketOffset - 14); this.drawTrend(); })
+        Button('前14项').backgroundColor('#171717').enabled(this.bucketOffset > 0).onClick(() => { this.bucketOffset = Math.max(0, this.bucketOffset - 14); this.drawTrend(); })
         Text(`${this.trend.length ? this.bucketOffset + 1 : 0}–${Math.min(this.bucketOffset + 14, this.trend.length)} / ${this.trend.length}`).fontSize(12)
-        Button('后14项').enabled(this.bucketOffset + 14 < this.trend.length).onClick(() => { this.bucketOffset += 14; this.drawTrend(); })
+        Button('后14项').backgroundColor('#171717').enabled(this.bucketOffset + 14 < this.trend.length).onClick(() => { this.bucketOffset += 14; this.drawTrend(); })
       }
       ForEach(this.visible(), (row: StatBucket) => {
         Button(`${row.startDate} ~ ${row.endDate} · ¥${money(row.amountCents)}`)
-          .width('100%').fontSize(13).onClick(() => this.onBucket(row))
+          .width('100%').fontSize(13).backgroundColor('#F2F2F2').fontColor('#171717').onClick(() => this.onBucket(row))
       }, (row: StatBucket) => row.key)
-    }.width('100%')
+    }.padding(20).width('100%').backgroundColor('#FFFFFF').borderRadius(24)
   }
 }

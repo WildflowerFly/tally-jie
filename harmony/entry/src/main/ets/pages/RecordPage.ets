@@ -82,13 +82,13 @@ export struct RecordPage {
       Column({ space: 16 }) {
         Text('交易信息').fontSize(18).fontWeight(FontWeight.Bold).width('100%')
         if (this.state.data.accounts.length === 0) {
-          Button('先创建账户').onClick(() => this.onManageAccounts())
+          Button('＋ 先创建账户').backgroundColor(FinanceTheme.text).onClick(() => this.onManageAccounts())
         } else {
           Select(this.accounts()).value(this.state.data.accounts.find((row) => row.id === this.accountId)?.name || '请选择账户')
             .onSelect((index: number) => { this.accountId = index === 0 ? '' : this.state.data.accounts[index - 1].id; })
         }
         if (this.categories().length === 0) {
-          Button('创建当前类型分类').onClick(() => this.onManageCategories())
+          Button('＋ 创建当前类型分类').backgroundColor(FinanceTheme.text).onClick(() => this.onManageCategories())
         } else {
           Flex({ wrap: FlexWrap.Wrap }) {
             ForEach(this.categories(), (row: Category) => {

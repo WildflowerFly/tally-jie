@@ -66,7 +66,7 @@ struct Index {
       } else if (this.app.status === 'error') {
         Text('账本载入失败，已禁止写入').fontColor(FinanceTheme.expense)
         Text(this.app.message).fontSize(13).fontColor(FinanceTheme.muted)
-        Button('重试').onClick(() => this.reload())
+        Button('重试').backgroundColor(FinanceTheme.text).onClick(() => this.reload())
       } else if (this.app.status === 'repair' && this.app.draft !== null) {
         Text('迁移前请补录初始余额').fontSize(20).fontWeight(FontWeight.Bold)
         Text('历史净支出使普通账户低于0，不能直接启用。原文件未修改；不推算或伪造余额。').fontSize(14)
@@ -75,7 +75,7 @@ struct Index {
           TextInput({ placeholder: '真实初始余额', text: this.repairAmounts[index] || '' })
             .onChange((value: string) => { this.repairAmounts[index] = value; })
         }, (id: string) => id)
-        Button('验证并迁移').onClick(() => this.repair())
+        Button('验证并迁移').backgroundColor(FinanceTheme.text).onClick(() => this.repair())
       } else if (this.app.data.accounts.some((account) => account.needsInitialBalance)) {
         Text('历史账户初始余额暂为0，请在账户管理接入后补录；当前余额不代表真实资产。')
           .fontSize(14).fontColor(FinanceTheme.muted)

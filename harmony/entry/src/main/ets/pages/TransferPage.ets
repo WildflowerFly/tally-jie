@@ -1,3 +1,4 @@
+import { FinanceHeader } from '../components/FinanceHeader';
 import { AppState } from '../state/AppState';
 import { Transfer } from '../model/LedgerModels';
 import { saveTransfer, deleteTransfer, TransferInput } from '../service/TransferService';
@@ -45,9 +46,10 @@ export struct TransferPage {
   }
   build() {
     Column({ space: 12 }) {
-      Text('账户转账').fontSize(26).fontWeight(FontWeight.Bold)
+      FinanceHeader({ title: '账户转账', subtitle: 'TRANSFER · 资金有序流动', back: true, onBack: () => this.onBack() })
       Text('仅账户间调拨，信用卡还款使用转账；不计收入、支出或预算。').fontSize(14)
       if (this.editing) {
+        Column({ space: 14 }) {
         Text('转出账户').fontSize(14)
         Select(this.options()).value(this.name(this.from)).onSelect((index: number) => { this.from = index === 0 ? '' : this.state.data.accounts[index - 1].id; })
         Text('转入账户').fontSize(14)
@@ -57,27 +59,28 @@ export struct TransferPage {
         TextInput({ text: this.time, placeholder: 'HH:mm' }).onChange((value: string) => { this.time = value; })
         TextInput({ text: this.note, placeholder: '备注' }).maxLength(500).onChange((value: string) => { this.note = value; })
         Text(`创建时间：${this.state.data.transfers.find((row) => row.id === this.transferId)?.createdAt || '新转账 / 历史未记录'}`).fontSize(13)
-        Button('确认保存').enabled(this.state.status === 'ready' && !this.state.saving).onClick(() => {
+        Button('确认保存').width('100%').height(50).backgroundColor(FinanceTheme.text).enabled(this.state.status === 'ready' && !this.state.saving).onClick(() => {
           this.getUIContext().showAlertDialog({ title: '确认转账变更？', message: `${this.name(this.from)} → ${this.name(this.to)}，¥${this.amount}`,
             primaryButton: { value: '取消', action: () => {} }, secondaryButton: { value: '保存', action: () => { this.save(); } } });
         })
-        Button('取消编辑').onClick(() => { this.editing = false; })
+        Button('取消编辑').backgroundColor('#EAEAEA').fontColor(FinanceTheme.text).onClick(() => { this.editing = false; })
+        }.padding(20).width('100%').backgroundColor('#FFFFFF').borderRadius(24)
       } else {
-        Button('发起转账').enabled(this.state.data.accounts.length >= 2).onClick(() => this.open())
+        Button('⇄ 发起转账').width('100%').height(50).backgroundColor(FinanceTheme.text).enabled(this.state.data.accounts.length >= 2).onClick(() => this.open())
         ForEach(this.records(), (row: Transfer) => {
           Column({ space: 8 }) {
             Text(`${row.date} ${row.time} · ${row.toAccountId === this.accountId ? '转入' : '转出'} ¥${money(row.amountCents)}`)
             Text(`${this.name(row.fromAccountId)} → ${this.name(row.toAccountId)} · ${row.note}`)
-            Button('详情 / 编辑').onClick(() => this.open(row))
-            Button('删除').enabled(this.state.status === 'ready' && !this.state.saving).onClick(() => {
+            Button('详情 / 编辑').backgroundColor(FinanceTheme.text).onClick(() => this.open(row))
+            Button('删除').backgroundColor('#F8EDEA').fontColor(FinanceTheme.expense).enabled(this.state.status === 'ready' && !this.state.saving).onClick(() => {
               this.getUIContext().showAlertDialog({ title: '删除转账？', message: '将同时撤销双方余额变化，若普通账户低于0则拒绝。',
                 primaryButton: { value: '取消', action: () => {} }, secondaryButton: { value: '删除', action: () => { this.erase(row.id); } } });
             })
-          }.padding(12).backgroundColor('#FFFFFF').borderRadius(16)
+          }.padding(20).width('100%').backgroundColor('#FFFFFF').borderRadius(24)
         }, (row: Transfer) => row.id)
       }
       if (this.message) { Text(this.message).fontColor(FinanceTheme.muted) }
-      Button('返回账户').onClick(() => this.onBack())
+      if (!this.editing && this.records().length === 0) { Text('暂无转账记录 · 资金调拨不计收支').fontSize(14).fontColor(FinanceTheme.muted).padding(24) }
     }.width('100%')
   }
 }
