@@ -9,6 +9,7 @@ import statisticsTest from './Statistics.test';
 import budgetTest from './Budget.test';
 import transferTest from './Transfer.test';
 import exchangeTest from './Exchange.test';
+import cardsTest from './Cards.test';
 import chartsTest from './Charts.test';
 import entryQueryTest from './EntryQuery.test';
 import ledgerIntegrationTest from './LedgerIntegration.test';
@@ -28,4 +29,5 @@ export default function testsuite() {
   ledgerIntegrationTest();
   entryQueryTest();
   chartsTest();
+  cardsTest();
 }

@@ -136,4 +136,6 @@ load('entry/src/test/EntryQuery.test.ets', {
 }).default();
 const geometry = load('entry/src/main/ets/domain/ChartGeometry.ets', {});
 load('entry/src/test/Charts.test.ets', { '@ohos/hypium': hypium, '../main/ets/domain/ChartGeometry': geometry }).default();
+const cards = load('entry/src/main/ets/domain/CardLayout.ets', {});
+load('entry/src/test/Cards.test.ets', { '@ohos/hypium': hypium, '../main/ets/domain/CardLayout': cards }).default();
 console.log(`${count} domain tests passed.`);
