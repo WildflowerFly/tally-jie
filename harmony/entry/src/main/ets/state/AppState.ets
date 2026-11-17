@@ -1,8 +1,8 @@
 import { common } from '@kit.AbilityKit';
 import { relationalStore } from '@kit.ArkData';
-import { LedgerData, emptyLedger } from '../model/LedgerModels';
+import { LedgerData, emptyLedger, LedgerFilter } from '../model/LedgerModels';
 import { LedgerDatabase } from '../database/LedgerDatabase';
-import { LedgerRepository } from '../repository/LedgerRepository';
+import { LedgerRepository, DatabasePage } from '../repository/LedgerRepository';
 import { LegacyMigrationService } from '../service/LegacyMigrationService';
 import { MigrationDraft, InitialBalanceInput } from '../service/LegacyMigration';
 
@@ -42,6 +42,10 @@ export class AppState {
       if (ticket !== this.generation) { return; }
       this.status = 'error'; this.message = (error as Error).message || '账本读取失败';
     }
+  }
+  async queryEntries(filter: LedgerFilter): Promise<DatabasePage> {
+    if (this.status !== 'ready' || this.repository === undefined) { throw new Error('NOT_READY'); }
+    return this.repository.query(filter);
   }
   // Pages never update data optimistically. A failed save keeps the committed view and form input.
   async commit(next: LedgerData): Promise<boolean> {

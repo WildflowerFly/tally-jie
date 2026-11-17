@@ -1,9 +1,10 @@
 import { AppState } from '../state/AppState';
 import { FinanceTheme } from '../theme/FinanceTheme';
 import { LedgerFilter, LedgerEntry, LedgerCursor, EntryType } from '../model/LedgerModels';
-import { defaultFilter, queryEntries } from '../service/LedgerQueryService';
+import { defaultFilter } from '../service/LedgerQueryService';
 import { saveEntry, deleteEntry, EntryInput } from '../service/TransactionService';
 import { parseAmount } from '../domain/Money';
+import { DailyTotal } from '../repository/LedgerRepository';
 import { money } from '../model/AppData';
 
 @Component
@@ -34,6 +35,10 @@ export struct DetailsPage {
   @State editCategory: string = '';
   @State editIncome: boolean = false;
   private active: LedgerFilter = defaultFilter();
+  @State days: DailyTotal[] = [];
+  @State loading: boolean = false;
+  private request: number = 0;
+  private pageRevision: number = 0;
   aboutToAppear(): void {
     this.keyword = this.initialFilter.keyword;
     this.typeIndex = this.initialFilter.type === null ? 0 : this.initialFilter.type === 'expense' ? 1 : 2;
@@ -60,13 +65,21 @@ export struct DetailsPage {
   private search(): void {
     try { this.active = this.filter(); this.fetch(false); } catch (error) { this.error = (error as Error).message; }
   }
-  private fetch(append: boolean): void {
+  private async fetch(append: boolean): Promise<void> {
+    if (append && this.loading) { return; }
+    const ticket = ++this.request; this.loading = true;
     try {
-      this.active.cursor = append ? this.next : null;
-      const page = queryEntries(this.state.data, this.active);
+      const filter: LedgerFilter = JSON.parse(JSON.stringify(this.active)) as LedgerFilter;
+      filter.cursor = append ? this.next : null;
+      const result = await this.state.queryEntries(filter);
+      if (ticket !== this.request) { return; }
+      if (append && result.revision !== this.pageRevision) { this.fetch(false); return; }
+      const page = result.page;
       this.rows = append ? this.rows.concat(page.rows) : page.rows;
+      this.days = result.days; this.pageRevision = result.revision;
       this.income = page.incomeCents; this.expense = page.expenseCents; this.count = page.count; this.next = page.next; this.error = '';
-    } catch (error) { this.error = (error as Error).message; }
+    } catch (error) { if (ticket === this.request) { this.error = (error as Error).message; } }
+    finally { if (ticket === this.request) { this.loading = false; } }
   }
   private open(row: LedgerEntry): void {
     this.selected = row.id; this.editAmount = money(row.amountCents); this.editDate = row.date;
@@ -91,10 +104,8 @@ export struct DetailsPage {
     catch (error) { this.error = (error as Error).message; }
   }
   private dayTotal(date: string): string {
-    const filter: LedgerFilter = JSON.parse(JSON.stringify(this.active)) as LedgerFilter;
-    filter.cursor = null; filter.range = { startDate: date, endDate: date };
-    const page = queryEntries(this.state.data, filter);
-    return `收 ¥${money(page.incomeCents)} / 支 ¥${money(page.expenseCents)}`;
+    const day = this.days.find((row: DailyTotal) => row.date === date);
+    return `收 ¥${money(day?.incomeCents || 0)} / 支 ¥${money(day?.expenseCents || 0)}`;
   }
   build() {
     Column({ space: 12 }) {

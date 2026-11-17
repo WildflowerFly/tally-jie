@@ -127,4 +127,11 @@ load('entry/src/test/LedgerIntegration.test.ets', {
   '../main/ets/service/DataExchangeService': exchange, '../main/ets/service/LedgerQueryService': queries,
   '../main/ets/service/StatisticsService': stats
 }).default();
+const entrySql = load('entry/src/main/ets/repository/EntryQuery.ets', {
+  '../model/LedgerModels': models, '../domain/LedgerRules': rules
+});
+load('entry/src/test/EntryQuery.test.ets', {
+  '@ohos/hypium': hypium, '../main/ets/repository/EntryQuery': entrySql,
+  '../main/ets/service/LedgerQueryService': queries
+}).default();
 console.log(`${count} domain tests passed.`);
