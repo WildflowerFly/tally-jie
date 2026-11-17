@@ -17,6 +17,7 @@ struct Index {
   @State amount: string = '';
   @State note: string = '';
   @State dirty: boolean = false;
+  @State profileSection: string = '';
   @State repairAmounts: string[] = [];
   aboutToAppear(): void { this.reload(); }
   private reload(): void {
@@ -88,11 +89,13 @@ struct Index {
             this.app.data.accounts.some((account) => account.needsInitialBalance)) { this.statusCard() }
           if (this.selected === 0) { StatisticsPage({ state: this.app }) }
           else if (this.selected === 1) { DetailsPage({ state: this.app }) }
-          else if (this.selected === 2) {
-            RecordPage({ state: this.app, amount: $amount, note: $note,
-              onDirty: () => { this.dirty = this.amount.length > 0 || this.note.length > 0; } })
-          } else if (this.selected === 3) { DepositsPage({ state: this.app }) }
-          else { ProfilePage({ state: this.app }) }
+          else if (this.selected === 3) { DepositsPage({ state: this.app }) }
+          else if (this.selected === 4) { ProfilePage({ state: this.app, section: $profileSection }) }
+          RecordPage({ state: this.app, amount: $amount, note: $note,
+            onDirty: () => { this.dirty = this.amount.length > 0 || this.note.length > 0; },
+            onManageAccounts: () => { this.profileSection = 'accounts'; this.selected = 4; },
+            onManageCategories: () => { this.profileSection = 'categories'; this.selected = 4; } })
+            .visibility(this.selected === 2 ? Visibility.Visible : Visibility.None)
         }.padding(20).width('100%')
       }.layoutWeight(1).width('100%').align(Alignment.Top)
       FloatingNavBar({ selected: this.selected, onSelect: (index: number) => this.changeTab(index) })

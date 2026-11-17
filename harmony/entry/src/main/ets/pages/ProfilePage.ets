@@ -5,17 +5,16 @@ import { CategoryManagePage } from './CategoryManagePage';
 @Component
 export struct ProfilePage {
   @ObjectLink state: AppState;
-  @State managingAccounts: boolean = false;
-  @State managingCategories: boolean = false;
+  @Link section: string;
   build() {
     Column({ space: 16 }) {
-      if (this.managingAccounts) {
-        AccountManagePage({ state: this.state, onBack: () => { this.managingAccounts = false; } })
-      } else if (this.managingCategories) {
-        CategoryManagePage({ state: this.state, onBack: () => { this.managingCategories = false; } })
+      if (this.section === 'accounts') {
+        AccountManagePage({ state: this.state, onBack: () => { this.section = ''; } })
+      } else if (this.section === 'categories') {
+        CategoryManagePage({ state: this.state, onBack: () => { this.section = ''; } })
       } else {
-      Button('分类管理').onClick(() => { this.managingCategories = true; })
-      Button('账户管理').onClick(() => { this.managingAccounts = true; })
+      Button('分类管理').onClick(() => { this.section = 'categories'; })
+      Button('账户管理').onClick(() => { this.section = 'accounts'; })
       Text('我的').fontSize(28).fontWeight(FontWeight.Bold).width('100%')
       Text('本地账本，无需登录').fontSize(20)
       Text('账户与分类已可管理；预算及导入导出将在后续任务接入。')

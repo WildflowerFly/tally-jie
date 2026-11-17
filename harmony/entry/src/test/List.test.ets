@@ -3,6 +3,7 @@ import ledgerDomainTest from './LedgerDomain.test';
 import legacyMigrationTest from './LegacyMigration.test';
 import accountTest from './Account.test';
 import categoryTest from './Category.test';
+import transactionTest from './Transaction.test';
 
 export default function testsuite() {
   localUnitTest();
@@ -10,4 +11,5 @@ export default function testsuite() {
   legacyMigrationTest();
   accountTest();
   categoryTest();
+  transactionTest();
 }
