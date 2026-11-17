@@ -99,8 +99,8 @@ export struct RecordPage {
           }
         }
         Row({ space: 12 }) {
-          Button(this.date).fontSize(14).onClick(() => this.pickDate())
-          Button(this.time).fontSize(14).onClick(() => this.pickTime())
+          Button(this.date).fontSize(14).backgroundColor('#EFEFEF').fontColor(FinanceTheme.text).onClick(() => this.pickDate())
+          Button(this.time).fontSize(14).backgroundColor('#EFEFEF').fontColor(FinanceTheme.text).onClick(() => this.pickTime())
         }
         TextInput({ placeholder: '备注（选填，最多500字）', text: this.note }).maxLength(500)
           .onChange((value: string) => { this.note = value; this.onDirty(); })

@@ -23,5 +23,28 @@ export default function navigationTest() {
       expect((await driver.findComponent(ON.id('finance-page-profile'))) !== null).assertTrue();
       await (await driver.findComponent(ON.id('finance-nav-record'))).click();
     });
+    it('redesignedPagesKeepChartsFiltersAndManagementReachable', 0, async () => {
+      const driver = Driver.create();
+      await (await driver.findComponent(ON.id('finance-nav-statistics'))).click();
+      await driver.delayMs(500);
+      expect((await driver.findComponent(ON.text('收支洞察'))) !== null).assertTrue();
+      await (await driver.findComponent(ON.id('finance-nav-details'))).click();
+      await driver.delayMs(500);
+      expect((await driver.findComponent(ON.text('交易明细'))) !== null).assertTrue();
+      await (await driver.findComponent(ON.text('组合筛选 ＋'))).click();
+      await driver.delayMs(300);
+      expect((await driver.findComponent(ON.text('收起筛选 −'))) !== null).assertTrue();
+      await (await driver.findComponent(ON.text('收起筛选 −'))).click();
+      await (await driver.findComponent(ON.id('finance-nav-profile'))).click();
+      await driver.delayMs(500);
+      expect((await driver.findComponent(ON.text('让每一笔，都有迹可循'))) !== null).assertTrue();
+      await (await driver.findComponent(ON.text('账户管理'))).click();
+      await driver.delayMs(500);
+      expect((await driver.findComponent(ON.text('ACCOUNTS · 资产的起点'))) !== null).assertTrue();
+      await (await driver.findComponent(ON.text('‹'))).click();
+      await (await driver.findComponent(ON.id('finance-nav-record'))).click();
+      await driver.delayMs(500);
+      expect((await driver.findComponent(ON.id('record-amount'))) !== null).assertTrue();
+    });
   });
 }
