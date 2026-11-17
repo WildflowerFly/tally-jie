@@ -110,4 +110,13 @@ load('entry/src/test/Transfer.test.ets', {
   '@ohos/hypium': hypium, '../main/ets/model/LedgerModels': models,
   '../main/ets/service/TransferService': transfers, '../main/ets/domain/LedgerRules': rules
 }).default();
+const csvCodec = load('entry/src/main/ets/domain/CsvCodec.ets', {});
+const exchange = load('entry/src/main/ets/service/DataExchangeService.ets', {
+  '../model/LedgerModels': models, '../domain/Money': money, '../domain/LedgerRules': rules,
+  '../domain/DateRange': dates, '../domain/CsvCodec': csvCodec
+});
+load('entry/src/test/Exchange.test.ets', {
+  '@ohos/hypium': hypium, '../main/ets/model/LedgerModels': models,
+  '../main/ets/domain/CsvCodec': csvCodec, '../main/ets/service/DataExchangeService': exchange
+}).default();
 console.log(`${count} domain tests passed.`);
