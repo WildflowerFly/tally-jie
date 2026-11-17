@@ -5,7 +5,7 @@ import { upsertCategory } from '../main/ets/service/CategoryService';
 import { saveEntry, deleteEntry } from '../main/ets/service/TransactionService';
 import { saveTransfer } from '../main/ets/service/TransferService';
 import { saveBudget, budgetUsage } from '../main/ets/service/BudgetService';
-import { accountBalance } from '../main/ets/domain/LedgerRules';
+import { validateLedger, accountBalance } from '../main/ets/domain/LedgerRules';
 import { exportJson, previewJson } from '../main/ets/service/DataExchangeService';
 import { queryEntries, defaultFilter } from '../main/ets/service/LedgerQueryService';
 import { statistics } from '../main/ets/service/StatisticsService';
@@ -33,6 +33,22 @@ export default function ledgerIntegrationTest() {
       const imported = previewJson(emptyLedger(), exportJson(data)).data;
       expect(accountBalance(imported, 'a') + accountBalance(imported, 'b')).assertEqual(125000);
       expect(previewJson(imported, exportJson(data)).added).assertEqual(0);
+    });
+    it('validatesHundredThousandRowsWithManyReferencesAndRejectsOverdraft', 0, () => {
+      const data = emptyLedger(); const now = '2026-11-17T00:00:00.000Z';
+      for (let i = 0; i < 20; i++) {
+        data.accounts.push({ id: `a${i}`, name: `账户${i}`, type: 'standard', initialBalanceCents: 1000000, needsInitialBalance: false, createdAt: now, updatedAt: now });
+      }
+      for (let i = 0; i < 100; i++) {
+        data.categories.push({ id: `c${i}`, name: `分类${i}`, type: 'expense', iconKey: 'food', sortOrder: i, createdAt: now, updatedAt: now });
+      }
+      for (let i = 0; i < 100000; i++) {
+        data.entries.push({ id: `e${i}`, type: 'expense', amountCents: 1, accountId: `a${i % 20}`, categoryId: `c${i % 100}`, date: '2026-11-17', time: '12:00', note: '', attachmentIds: [], createdAt: now, updatedAt: now });
+      }
+      validateLedger(data); expect(accountBalance(data, 'a0')).assertEqual(995000);
+      data.accounts[0].initialBalanceCents = 0;
+      let rejected = false; try { validateLedger(data); } catch (_) { rejected = true; }
+      expect(rejected).assertTrue();
     });
     it('tenThousandEntriesPageWithoutLossAndStatisticsReconcile', 0, () => {
       const now = '2026-11-17T00:00:00.000Z';

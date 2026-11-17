@@ -59,7 +59,12 @@ export function validateLedger(data: LedgerData): void {
   uniqueIds(data.transfers.map((item) => item.id));
   uniqueIds(data.budgets.map((item) => item.id));
   uniqueIds(data.attachments.map((item) => item.id));
+  const accounts = new Map<string, Account>();
+  const categories = new Map<string, Category>();
+  const balances = new Map<string, number>();
+  const assets = new Set(data.attachments.map((item) => item.id));
   data.accounts.forEach((item) => {
+    accounts.set(item.id, item); balances.set(item.id, item.initialBalanceCents);
     entity(item.type === 'standard' || item.type === 'credit');
     entity(typeof item.name === 'string' && item.name.trim().length > 0 && typeof item.needsInitialBalance === 'boolean');
     if (!Number.isSafeInteger(item.initialBalanceCents) || Math.abs(item.initialBalanceCents) > MAX_AMOUNT_CENTS) {
@@ -69,6 +74,7 @@ export function validateLedger(data: LedgerData): void {
     timestamps(item.createdAt, item.updatedAt);
   });
   data.categories.forEach((item) => {
+    categories.set(item.id, item);
     entity(item.type === 'income' || item.type === 'expense');
     entity(item.name.trim().length > 0 && item.iconKey.trim().length > 0 && Number.isSafeInteger(item.sortOrder) && item.sortOrder >= 0);
     timestamps(item.createdAt, item.updatedAt);
@@ -78,18 +84,23 @@ export function validateLedger(data: LedgerData): void {
   });
   data.entries.forEach((item) => {
     entity(item.type === 'income' || item.type === 'expense');
-    assertAmount(item.amountCents); account(data, item.accountId);
-    if (category(data, item.categoryId).type !== item.type) { throw new LedgerError('CATEGORY_TYPE_MISMATCH'); }
+    assertAmount(item.amountCents);
+    if (!accounts.has(item.accountId) || !categories.has(item.categoryId)) { throw new LedgerError('REFERENCE_NOT_FOUND'); }
+    balances.set(item.accountId, addCents(balances.get(item.accountId)!, item.type === 'income' ? item.amountCents : -item.amountCents));
+    if (categories.get(item.categoryId)!.type !== item.type) { throw new LedgerError('CATEGORY_TYPE_MISMATCH'); }
     dateTime(item.date, item.time); timestamps(item.createdAt, item.updatedAt);
     entity(typeof item.note === 'string' && item.attachmentIds.length <= 9);
     uniqueIds(item.attachmentIds);
     item.attachmentIds.forEach((id: string) => {
-      if (!data.attachments.some((asset) => asset.id === id)) { throw new LedgerError('REFERENCE_NOT_FOUND'); }
+      if (!assets.has(id)) { throw new LedgerError('REFERENCE_NOT_FOUND'); }
     });
   });
   data.transfers.forEach((item) => {
     if (item.fromAccountId === item.toAccountId) { throw new LedgerError('INVALID_TRANSFER'); }
-    account(data, item.fromAccountId); account(data, item.toAccountId); assertAmount(item.amountCents);
+    if (!accounts.has(item.fromAccountId) || !accounts.has(item.toAccountId)) { throw new LedgerError('REFERENCE_NOT_FOUND'); }
+    assertAmount(item.amountCents);
+    balances.set(item.fromAccountId, addCents(balances.get(item.fromAccountId)!, -item.amountCents));
+    balances.set(item.toAccountId, addCents(balances.get(item.toAccountId)!, item.amountCents));
     dateTime(item.date, item.time); timestamps(item.createdAt, item.updatedAt); entity(typeof item.note === 'string');
   });
   data.budgets.forEach((item) => {
@@ -101,7 +112,8 @@ export function validateLedger(data: LedgerData): void {
     if (item.scope === 'total') { entity(item.categoryId === null); }
     else {
       if (item.categoryId === null) { throw new LedgerError('REFERENCE_NOT_FOUND'); }
-      if (category(data, item.categoryId).type !== 'expense') { throw new LedgerError('CATEGORY_TYPE_MISMATCH'); }
+      if (!categories.has(item.categoryId)) { throw new LedgerError('REFERENCE_NOT_FOUND'); }
+      if (categories.get(item.categoryId)!.type !== 'expense') { throw new LedgerError('CATEGORY_TYPE_MISMATCH'); }
     }
     if (item.period !== 'custom') {
       const range = item.period === 'month' ? calendarMonth(item.startDate) : calendarWeek(item.startDate);
@@ -109,7 +121,7 @@ export function validateLedger(data: LedgerData): void {
     }
   });
   data.accounts.forEach((item) => {
-    const balance = accountBalance(data, item.id);
+    const balance = balances.get(item.id)!;
     if (balance < 0 && item.type !== 'credit') { throw new LedgerError('NEGATIVE_BALANCE'); }
   });
 }
