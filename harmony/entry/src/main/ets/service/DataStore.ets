@@ -4,6 +4,11 @@ import { photoAccessHelper } from '@kit.MediaLibraryKit';
 import { util } from '@kit.ArkTS';
 import { AppData, Backup, BackupAsset, emptyData, newId, validateData } from '../model/AppData';
 
+// New finance entry point uses these services; legacy save is not called after v2 activation.
+export { LedgerDatabase } from '../database/LedgerDatabase';
+export { LedgerRepository } from '../repository/LedgerRepository';
+export { LegacyMigrationService } from './LegacyMigrationService';
+
 const MAX_BACKUP_BYTES: number = 64 * 1024 * 1024;
 
 export class DataStore {

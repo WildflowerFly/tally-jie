@@ -53,4 +53,12 @@ load('entry/src/test/LedgerDomain.test.ets', {
   '../main/ets/domain/Money': money, '../main/ets/domain/DateRange': dates,
   '../main/ets/domain/LedgerRules': rules
 }).default();
+const migration = load('entry/src/main/ets/service/LegacyMigration.ets', {
+  '../model/AppData': domain, '../model/LedgerModels': models, '../domain/LedgerRules': rules,
+  '../domain/Money': money, '../domain/DateRange': dates
+});
+load('entry/src/test/LegacyMigration.test.ets', {
+  '@ohos/hypium': hypium, '../main/ets/model/AppData': domain,
+  '../main/ets/service/LegacyMigration': migration, '../main/ets/domain/LedgerRules': rules
+}).default();
 console.log(`${count} domain tests passed.`);
