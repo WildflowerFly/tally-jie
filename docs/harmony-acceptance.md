@@ -3,7 +3,7 @@
 > 建立日期：2026-11-17  
 > 计划：`docs/harmony-implementation-plan.md`  
 > 决策与环境：`docs/harmony-decisions.md`  
-> 状态：Task 1 基线、Task 2 隔离领域契约已验证；新页面及持久层未实施，平台验收 blocked。
+> 当前状态：58项领域测试、主机SQL/文件故障回归及API26模拟器8项测试通过；后文各Task早期结果为历史记录。最新补齐及AC证据见末节。全量人工/实体机/性能验收未关闭。
 
 ## 1. Task 1 基线结果
 
@@ -190,3 +190,41 @@ SHA-256：`088694ec0dfc37f78e010ebfec0db0afdd61c4b7c43932cd1daa391afd730215`。
 | 系统备份恢复与候选性能/屏幕适配 | 设备提供方 + 验收者 | 确定设备/样本/计时条件，多次测量及恢复验证 |
 
 以上为后续开发/验收清单，不以自主决策授权替代实现或实测。所有复合Step只有子项证据，不全部勾选，整体仍 **Implementing**，Task14未完成、未Verified。
+
+## 18. 缺口补齐与当前AC证据（2026-11-17）
+
+本节覆盖历史“尚未实现/无设备”结论，历史数据不作当前状态。执行步骤勾选与红绿记录见 docs/harmony-completion-followup.md。
+
+| 验收组 | 当前已执行证据 | 尚未覆盖 |
+| --- | --- | --- |
+| AC-00 | 58项领域、主机SQL及4组文件故障测试；应用与测试包构建；模拟器8项通过 | 实体机矩阵 |
+| AC-01 | 模拟器启动EntryAbility、默认记账、五入口顺序及我的/记账切换 | 杀进程冷启动完整路径 |
+| AC-02 | Canvas/扇叠卡片代码、命中和布局单测 | 截图视觉审查、触摸/窄屏适配 |
+| AC-03/04/05 | 金额、余额/初始、动态账户/分类/迁移保护领域测试 | 完整UI输入与重启操作 |
+| AC-06 | 生产SQL主机1万条/200页、索引计划、字面关键词、全结果/日汇总；模拟器1万条分页/差量编辑后重开 | 全部组合UI及并发写翻页 |
+| AC-07 | 独立整数整合基准，换账户跨月改账/删除 | UI取消与确认全过程 |
+| AC-08 | 日历范围/补零/并列日均、环形与趋势命中算法 | Canvas实际触摸命中与滚动竞争 |
+| AC-09/10/11 | 预算120%→90%领域、空单多卡布局/轮换、转账守恒/负余额 | UI视觉/滑动/编辑删除流程 |
+| AC-12 | 导航模拟器及管理入口代码 | 所有管理入口手工遍历 |
+| AC-13 | CSV/JSON/关联表/可移植附件协议回归、映射错误、重复冲突；主机短写/磁盘故障；模拟器实际文件恢复/拒绝覆盖、来源事务 | 系统选择器取消/权限、真实强杀/磁盘不足与完整空沙箱UI往返 |
+| AC-14 | 模拟器事务回滚、revision、重开、引用保护、迁移标记幂等；生产SQL触发器FK OFF验证 | schema1/2存量升级强杀矩阵、损坏源文件完整平台迁移 |
+| AC-15 | 10万条20账户100分类单遍校验正确性；无网络新增 | 明确机型计时边界与候选阈值、多轮测量 |
+| AC-16 | 等效图表按钮、卡片按钮、布局代码 | 实际大字号/读屏/键盘/安全区 |
+
+### 平台实际执行与修复
+
+- 模拟器127.0.0.1:5555，model=emulator、API26。可安装未签名HAP（只证明本机模拟器接受，不代表实体机签名豁免）。
+- 首轮 Tests run:7 / Pass:1 / Error:6：上下文 Illegal context、导航未启动。修复测试使用UIAbility.context后暴露数据库 FOREIGN_KEYS_UNAVAILABLE。
+- schema3补充连接池无关的持久化引用保护触发器；PRAGMA读取不能作为所有写连接的外键证据。修复导航等待后7项通过，再增加实际附件恢复测试，最终 **Tests run:8, Failure:0, Error:0, Pass:8, Ignore:0**。
+- 平台8项包含1项原模板基线，7项业务平台测试；万条分页/保存重开测试单次约11秒是整例耗时，不是单笔保存或筛选性能结论。
+- 应用最终构建7s529ms、最终测试包构建7s885ms；均为增量构建。未签名应用SHA256：762fe311d26b5d06221cd3ba9ea7c45e9760b59671f32a724ebe1a0070489c1f。
+
+### 复现
+
+- 纯域：DevEco Node运行 harmony/scripts/test-domain.cjs，参数为内置typescript.js。
+- SQL：python3 harmony/scripts/test-sqlite.py <WindowsNode的WSL路径> <WindowsTypeScript路径>。
+- 文件故障：DevEco Node运行 harmony/scripts/test-exchange-files.cjs，参数为typescript.js。
+- 构建：python3 harmony/scripts/check-build.py <DevEcoWindows安装目录>，加ohosTest构建测试包。
+- 安装应用和测试HAP后：hdc -t 127.0.0.1:5555 shell aa test -b com.tallyjie.harmony -m entry_test -s unittest OpenHarmonyTestRunner -s timeout 120000。应核对报告Pass/Failure/Error，不仅看命令退出码（失败时aa也可能退出0）。
+
+全量人工AC、文件系统真实断电/强杀、系统备份、实体机和性能项目保留未勾选，不能以8项平台测试替代。代码、主机和已执行模拟器证据分层记录，不宣称所有原计划Step已通过。
