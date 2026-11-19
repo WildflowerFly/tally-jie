@@ -1,7 +1,7 @@
 import { common } from '@kit.AbilityKit';
 import { fileIo as fs, picker } from '@kit.CoreFileKit';
 import { util } from '@kit.ArkTS';
-import { FinanceHeader } from '../components/FinanceHeader';
+import { ManagementHeader } from '../components/ManagementHeader';
 import { AppState } from '../state/AppState';
 import { DateRange } from '../model/LedgerModels';
 import { exportCsv, exportJson, previewJson, ImportPreview } from '../service/DataExchangeService';
@@ -46,7 +46,8 @@ export struct DataExchangePage {
     } finally { await fs.close(file); }
   }
   private async output(): Promise<void> {
-    if (this.busy) { return; } this.busy = true;
+    if (this.busy || this.state.saving || this.state.status !== 'ready') { return; }
+    this.busy = true; this.message = '';
     try {
       const range: DateRange | null = this.start || this.end ? { startDate: this.start, endDate: this.end } : null;
       if (this.mode !== 3 && range !== null) { throw new Error('日期范围仅用于CSV收支；备份及关联表必须全量以保持余额与引用完整'); }
@@ -86,11 +87,12 @@ export struct DataExchangePage {
     else { this.message = this.issues.length ? `发现${this.issues.length}处错误，未写入任何数据；行号为CSV逻辑记录号。` : '预览完成，未写入；确认后原子合并，不覆盖现有记录。'; }
   }
   private async remap(): Promise<void> {
-    if (this.busy) { return; } this.busy = true;
+    if (this.busy || this.state.saving || this.state.status !== 'ready') { return; } this.busy = true;
     try { await this.validate(); } catch (error) { this.message = (error as Error).message; } finally { this.busy = false; }
   }
   private async input(): Promise<void> {
-    if (this.busy || this.state.status !== 'ready') { return; } this.busy = true; this.clear();
+    if (this.busy || this.state.saving || this.state.status !== 'ready') { return; }
+    this.busy = true; this.clear(); this.message = '';
     try {
       const options = new picker.DocumentSelectOptions(); options.maxSelectNumber = 1; options.fileSuffixFilters = [this.mode >= 2 ? '.csv' : '.json'];
       const uris = await new picker.DocumentViewPicker(this.getUIContext().getHostContext() as common.UIAbilityContext).select(options);
@@ -104,7 +106,7 @@ export struct DataExchangePage {
     } catch (error) { this.preview = null; this.message = (error as Error).message; } finally { this.busy = false; }
   }
   private async apply(): Promise<void> {
-    if (this.preview === null || this.busy || this.state.saving) { return; }
+    if (this.preview === null || this.busy || this.state.saving || this.state.status !== 'ready') { return; }
     if (this.previewRevision !== this.state.revision) { this.preview = null; this.message = '账本已变化，请重新预览'; return; }
     this.busy = true;
     try {
@@ -121,53 +123,100 @@ export struct DataExchangePage {
     }
   }
   private headerOptions(): SelectOption[] { const options: SelectOption[] = []; this.headers.forEach((name: string) => { options.push({ value: name }); }); return options; }
-  build() {
-    Column({ space: 12 }) {
-      FinanceHeader({ title: '数据与备份', subtitle: 'DATA VAULT · 财务记录妥善保存', back: true, onBack: () => { if (!this.busy) { this.onBack(); } } })
+  private formatOptions(): SelectOption[] {
+    return [{ value: '完整备份 · JSON' }, { value: '账本数据 · JSON' },
+      { value: '关联数据 · CSV' }, { value: '收支明细 · CSV' }];
+  }
+  private formatHint(): string {
+    return ['含账本、附件与归档', '仅账本，不含附件文件', '全量关联表，不含附件文件', '收支明细，支持自定义列'][this.mode];
+  }
+  @Builder
+  actionCard(icon: Resource, label: string, detail: string, id: string, action: () => void) {
+    Button({ type: ButtonType.Normal }) {
       Column({ space: 10 }) {
-        Text('属于你的数据，由你掌握').fontSize(21).fontWeight(FontWeight.Bold).fontColor('#FFFFFF')
-        Text('完整备份 · 预览合并 · 拒绝静默覆盖').fontSize(12).fontColor('#CCCCCC')
-      }.alignItems(HorizontalAlign.Start).padding(24).width('100%').borderRadius(28)
-        .linearGradient({ angle: 120, colors: [['#353535', 0], ['#101010', 1]] })
-      Text('完整备份含账户/分类/收支/转账/预算、附件及旧日记归档。归档只保存，不恢复日记页面。导入前校验，失败不合并；已有ID异内容及同路径异字节拒绝覆盖。').fontSize(13)
-      Column({ space: 14 }) {
-      Text('选择交换格式').fontSize(18).fontWeight(FontWeight.Bold).width('100%')
-      Select([{ value: '完整可移植备份 JSON' }, { value: '账本元数据 JSON' }, { value: '全实体关联表 CSV' }, { value: '收支 CSV / 自定义列映射' }])
-        .enabled(!this.busy).onSelect((index: number) => { this.mode = index; this.clear(); })
-      if (this.mode === 3) {
-        TextInput({ text: this.start, placeholder: '收支CSV导出开始日期（可空）' }).enabled(!this.busy).onChange((value: string) => { this.start = value; })
-        TextInput({ text: this.end, placeholder: '收支CSV导出结束日期（可空）' }).enabled(!this.busy).onChange((value: string) => { this.end = value; })
-      }
-      Button('↗ 选择位置并导出').width('100%').height(50).backgroundColor(FinanceTheme.text).enabled(!this.busy && this.state.status === 'ready').onClick(() => this.output())
-      Button('↙ 选择文件并预览').width('100%').height(50).backgroundColor('#EAEAEA').fontColor(FinanceTheme.text)
-        .enabled(!this.busy && !this.state.saving && this.state.status === 'ready').onClick(() => this.input())
-      }.padding(20).width('100%').backgroundColor('#FFFFFF').borderRadius(24)
-      if (this.mode === 3 && this.headers.length) {
-        Text('账户/分类支持已有ID或唯一名称；不自动创建。同ID同业务内容跳过。').fontSize(12)
-        ForEach(['编号ID', '类型（income/expense或收入/支出）', '金额', '账户', '分类', '日期', '时间', '备注'], (label: string, index: number) => {
-          Row() {
-            Text(label).layoutWeight(1).fontSize(12)
-            Select(this.headerOptions()).value(this.mapping[index]).enabled(!this.busy)
-              .onSelect((column: number) => { const next = this.mapping.slice(); next[index] = this.headers[column]; this.mapping = next; this.preview = null; })
+        Image(icon).width(24).height(24).accessibilityLevel('no').margin({ bottom: 12 })
+        Text(label).fontSize(18).fontWeight(FontWeight.Medium).fontColor(FinanceTheme.text)
+        Text(detail).fontSize(12).fontColor(FinanceTheme.muted)
+      }.width('100%').padding(20).alignItems(HorizontalAlign.Start)
+    }.layoutWeight(1).padding(0).borderRadius(22).backgroundColor('#FFFFFF')
+      .enabled(!this.busy && !this.state.saving && this.state.status === 'ready')
+      .onClick(action).id(id).accessibilityText(`${label}，${detail}`)
+  }
+  build() {
+    Column({ space: 20 }) {
+      ManagementHeader({ title: '数据与备份', disabled: this.busy || this.state.saving,
+        onBack: () => this.onBack() })
+      Row({ space: 12 }) {
+        this.actionCard($r('app.media.exchange_export'), '导出文件', '选择保存位置', 'exchange-export', () => this.output())
+        this.actionCard($r('app.media.deposit_receive'), '导入文件', '预览后再确认', 'exchange-import', () => this.input())
+      }.width('100%')
+      Column({ space: 12 }) {
+        Row() {
+          Text('文件格式').fontSize(14).fontColor(FinanceTheme.text).layoutWeight(1)
+          Select(this.formatOptions()).selected(this.mode).value(this.formatOptions()[this.mode].value)
+            .font({ size: 13 }).fontColor(FinanceTheme.text).backgroundColor('#F5F5F5')
+            .enabled(!this.busy && !this.state.saving).id('exchange-format')
+            .onSelect((index: number) => {
+              this.mode = index; this.clear(); this.message = ''; this.start = ''; this.end = '';
+            })
+        }.width('100%')
+        Text(this.formatHint()).fontSize(12).fontColor(FinanceTheme.muted).width('100%').id('exchange-format-hint')
+        if (this.mode === 3) {
+          Row({ space: 8 }) {
+            TextInput({ text: this.start, placeholder: '开始日期（选填）' }).fontSize(12).layoutWeight(1)
+              .enabled(!this.busy).onChange((value: string) => { this.start = value; }).id('exchange-start')
+            TextInput({ text: this.end, placeholder: '结束日期（选填）' }).fontSize(12).layoutWeight(1)
+              .enabled(!this.busy).onChange((value: string) => { this.end = value; }).id('exchange-end')
           }.width('100%')
-        }, (label: string) => label)
-        Button('校验映射').backgroundColor(FinanceTheme.text).enabled(!this.busy).onClick(() => this.remap())
+          Text('日期格式 YYYY-MM-DD').fontSize(11).fontColor(FinanceTheme.muted).width('100%')
+        }
+      }.padding(20).width('100%').backgroundColor('#FFFFFF').borderRadius(22)
+      if (this.mode === 3 && this.headers.length) {
+        Column({ space: 12 }) {
+          Text('匹配列名').fontSize(17).fontWeight(FontWeight.Medium).width('100%')
+          Text('账户与分类需已存在').fontSize(12).fontColor(FinanceTheme.muted).width('100%')
+          ForEach(['编号', '收支类型', '金额', '账户', '分类', '日期', '时间', '备注'], (label: string, index: number) => {
+            Row() {
+              Text(label).layoutWeight(1).fontSize(13)
+              Select(this.headerOptions()).value(this.mapping[index]).enabled(!this.busy && !this.state.saving)
+                .onSelect((column: number) => {
+                  const next = this.mapping.slice(); next[index] = this.headers[column]; this.mapping = next; this.preview = null;
+                })
+            }.width('100%')
+          }, (label: string) => label)
+          Button('校验映射').width('100%').backgroundColor(FinanceTheme.text)
+            .enabled(!this.busy && !this.state.saving).onClick(() => this.remap())
+        }.padding(20).width('100%').backgroundColor('#FFFFFF').borderRadius(22)
       }
       if (this.issues.length) {
-        ForEach(this.issues.slice(this.issueOffset, this.issueOffset + 50), (issue: RowIssue) => {
-          Text(`${issue.line === 0 ? '整体账本' : '记录 ' + issue.line}：${issue.message}`).fontColor(FinanceTheme.expense).fontSize(12)
-        }, (issue: RowIssue) => `${issue.line}-${issue.message}`)
-        Button('下一页错误').backgroundColor(FinanceTheme.text).enabled(this.issueOffset + 50 < this.issues.length).onClick(() => { this.issueOffset += 50; })
-        Button('重看错误').backgroundColor('#EAEAEA').fontColor(FinanceTheme.text).onClick(() => { this.issueOffset = 0; })
+        Column({ space: 12 }) {
+          Text(`发现 ${this.issues.length} 处问题，未导入`).fontSize(15).width('100%')
+          ForEach(this.issues.slice(this.issueOffset, this.issueOffset + 50), (issue: RowIssue) => {
+            Text(`${issue.line === 0 ? '整体账本' : '记录 ' + issue.line}：${issue.message}`)
+              .fontColor(FinanceTheme.expense).fontSize(12).width('100%')
+          }, (issue: RowIssue) => `${issue.line}-${issue.message}`)
+          Row({ space: 12 }) {
+            Button('上一页').backgroundColor('#EAEAEA').fontColor(FinanceTheme.text).enabled(this.issueOffset > 0)
+              .onClick(() => { this.issueOffset = Math.max(0, this.issueOffset - 50); })
+            Button('下一页').backgroundColor(FinanceTheme.text).enabled(this.issueOffset + 50 < this.issues.length)
+              .onClick(() => { this.issueOffset += 50; })
+          }
+        }.padding(20).width('100%').backgroundColor('#FFFFFF').borderRadius(22)
       }
       if (this.preview !== null) {
-        Text(`新增 ${this.preview.added} 项；重复跳过 ${this.preview.duplicates} 项（含关联实体）`)
-        Button('确认合并导入').width('100%').height(50).backgroundColor(FinanceTheme.text).enabled(!this.busy && !this.state.saving).onClick(() => this.apply())
-        Button('取消预览').backgroundColor('#EAEAEA').fontColor(FinanceTheme.text).enabled(!this.busy).onClick(() => { this.clear(); this.message = '已取消，账本未修改'; })
+        Column({ space: 16 }) {
+          Text('导入预览').fontSize(18).fontWeight(FontWeight.Medium).width('100%')
+          Text(`新增 ${this.preview.added} 项 · 跳过重复 ${this.preview.duplicates} 项`).fontSize(14).width('100%')
+          Text('合并到当前账本，不覆盖已有记录').fontSize(12).fontColor(FinanceTheme.muted).width('100%')
+          Button('确认导入').width('100%').height(46).backgroundColor(FinanceTheme.text)
+            .enabled(!this.busy && !this.state.saving).onClick(() => this.apply()).id('exchange-confirm-import')
+          Button('取消').backgroundColor(Color.Transparent).fontColor(FinanceTheme.muted).enabled(!this.busy)
+            .onClick(() => { this.clear(); this.message = '已取消，账本未修改'; })
+        }.padding(20).width('100%').backgroundColor('#FFFFFF').borderRadius(22)
       }
-      if (this.busy) { Text('处理中，请勿退出…').fontColor(FinanceTheme.muted) }
-      if (this.message) { Text(this.message).fontColor(FinanceTheme.muted) }
-      Text('请将备份保存至安全位置，避免泄露财务信息。').fontSize(12).fontColor(FinanceTheme.muted).padding(12)
-    }.width('100%')
+      if (this.busy) { Text('处理中…').fontSize(13).fontColor(FinanceTheme.muted) }
+      if (this.message) { Text(this.message).fontSize(13).fontColor(FinanceTheme.muted).width('100%') }
+      Text('导入前预览，备份请妥善保管').fontSize(11).fontColor('#999999')
+    }.width('100%').id('finance-page-exchange')
   }
 }

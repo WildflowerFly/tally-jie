@@ -1,87 +1,87 @@
-import { FinanceHeader } from '../components/FinanceHeader';
 import { FinanceCharts } from '../components/FinanceCharts';
 import { AppState } from '../state/AppState';
 import { FinanceTheme } from '../theme/FinanceTheme';
-import { DateRange, EntryType, LedgerFilter } from '../model/LedgerModels';
-import { calendarMonth, calendarWeek } from '../domain/DateRange';
+import { DateRange, LedgerFilter } from '../model/LedgerModels';
+import { calendarMonth } from '../domain/DateRange';
 import { statistics, StatisticsResult, TrendUnit, StatBucket, CategoryStat } from '../service/StatisticsService';
 import { defaultFilter } from '../service/LedgerQueryService';
 import { dateKey, money } from '../model/AppData';
+
+function recentMonths(): DateRange {
+  const today = dateKey();
+  const date = new Date(`${today.slice(0, 7)}-01T12:00:00Z`);
+  date.setUTCMonth(date.getUTCMonth() - 5);
+  return { startDate: date.toISOString().slice(0, 10), endDate: calendarMonth(today).endDate };
+}
+
 @Component
 export struct StatisticsPage {
   @ObjectLink state: AppState;
+  @Prop @Watch('refresh') refreshVersion: number = 0;
   onDetails: (filter: LedgerFilter) => void = () => {};
-  @State start: string = calendarMonth(dateKey()).startDate;
-  @State end: string = calendarMonth(dateKey()).endDate;
-  @State income: boolean = false;
-  @State unit: TrendUnit = 'day';
+  @State unit: TrendUnit = 'month';
   @State result: StatisticsResult = { incomeCents: 0, expenseCents: 0, netCents: 0, averageExpenseCents: 0, categories: [], trend: [], highestDays: [], highestCategories: [] };
-  @State error: string = '';
-  @State customRange: boolean = false;
-  private appliedIncome: boolean = false;
-  private appliedStart: string = this.start;
-  private appliedEnd: string = this.end;
-  aboutToAppear(): void { this.refresh(); }
-  private refresh(): void {
-    try { this.result = statistics(this.state.data, { startDate: this.start, endDate: this.end }, this.income ? 'income' : 'expense', this.unit); this.appliedIncome = this.income; this.appliedStart = this.start; this.appliedEnd = this.end; this.error = ''; }
-    catch (error) { this.error = (error as Error).message; }
-  }
-  private period(index: number): void {
-    const today = dateKey();
-    const range: DateRange = index === 0 ? calendarWeek(today) : index === 1 ? calendarMonth(today) : { startDate: `${today.slice(0, 4)}-01-01`, endDate: `${today.slice(0, 4)}-12-31` };
-    this.start = range.startDate; this.end = range.endDate; this.refresh();
-  }
-  private drill(type: EntryType, category: string = '', start: string = this.appliedStart, end: string = this.appliedEnd): void {
-    const filter = defaultFilter(); filter.type = type; filter.range = { startDate: start, endDate: end };
-    filter.categoryIds = category ? [category] : []; this.onDetails(filter);
-  }
-  build() {
-    Column({ space: 12 }) {
-      FinanceHeader({ title: '收支洞察', subtitle: 'OVERVIEW · 看见财务节奏' })
-      Row({ space: 8 }) {
-        Button('本周').backgroundColor(FinanceTheme.text).onClick(() => this.period(0))
-        Button('本月').backgroundColor(FinanceTheme.text).onClick(() => this.period(1))
-        Button('本年').backgroundColor(FinanceTheme.text).onClick(() => this.period(2))
-      }
-      Button(this.customRange ? '收起日期设置 −' : '自定义日期范围 ＋').backgroundColor('#EAEAEA').fontColor(FinanceTheme.text)
-        .onClick(() => { this.customRange = !this.customRange; })
-      if (this.customRange) {
-        Column({ space: 12 }) {
-          TextInput({ text: this.start, placeholder: '开始日期 YYYY-MM-DD' }).onChange((value: string) => { this.start = value; })
-          TextInput({ text: this.end, placeholder: '结束日期 YYYY-MM-DD' }).onChange((value: string) => { this.end = value; })
-          Button('应用范围').backgroundColor(FinanceTheme.text).onClick(() => this.refresh())
-        }.padding(20).backgroundColor('#FFFFFF').borderRadius(24)
-      }
-      Text(`${this.appliedStart} 至 ${this.appliedEnd}`).fontSize(13)
-      if (this.error) { Text(this.error).fontColor(FinanceTheme.expense) }
-      Column({ space: 12 }) {
-        Text('期间结余 / CNY').fontSize(12).fontColor('#BCBCBC')
-        Text(`¥ ${money(this.result.netCents)}`).fontSize(36).fontWeight(FontWeight.Bold).fontColor('#FFFFFF').maxLines(1).minFontSize(20).maxFontSize(36).width('100%')
-        Row({ space: 12 }) {
-          Button(`↙ 收入 ¥${money(this.result.incomeCents)}`).fontSize(13).fontColor('#D5F1E5').backgroundColor('#363636').layoutWeight(1).onClick(() => this.drill('income'))
-          Button(`↗ 支出 ¥${money(this.result.expenseCents)}`).fontSize(13).fontColor('#F6D5CD').backgroundColor('#363636').layoutWeight(1).onClick(() => this.drill('expense'))
-        }
-        Text(`日均支出 ¥${money(this.result.averageExpenseCents)}`).fontSize(13).fontColor('#C8C8C8')
-      }.alignItems(HorizontalAlign.Start).padding(24).width('100%').borderRadius(28)
-        .linearGradient({ angle: 120, colors: [['#353535', 0], ['#101010', 1]] })
-      Text(`最高消费日：${this.result.highestDays.join('、') || '暂无'}\n最高分类：${this.result.highestCategories.join('、') || '暂无'}`).fontSize(14)
-      Row({ space: 8 }) {
-        Button('支出分布').backgroundColor(!this.income ? FinanceTheme.text : '#EAEAEA').fontColor(!this.income ? '#FFFFFF' : FinanceTheme.text).onClick(() => { this.income = false; this.refresh(); })
-        Button('收入分布').backgroundColor(this.income ? FinanceTheme.text : '#EAEAEA').fontColor(this.income ? '#FFFFFF' : FinanceTheme.text).onClick(() => { this.income = true; this.refresh(); })
-      }
-      Select([{ value: '日趋势' }, { value: '周趋势' }, { value: '月趋势' }]).onSelect((index: number) => {
-        this.unit = index === 0 ? 'day' : index === 1 ? 'week' : 'month'; this.refresh();
-      })
-      if (this.result.categories.length === 0) { Text('当前范围暂无数据').fontColor(FinanceTheme.muted) }
-      Text('分布与趋势').fontSize(19).fontWeight(FontWeight.Bold).width('100%').margin({ top: 12 })
-      FinanceCharts({ categories: this.result.categories, trend: this.result.trend,
-        onCategory: (id: string) => this.drill(this.appliedIncome ? 'income' : 'expense', id),
-        onBucket: (row: StatBucket) => this.drill(this.appliedIncome ? 'income' : 'expense', '', row.startDate, row.endDate) })
-      ForEach(this.result.categories, (row: CategoryStat) => {
-        Button(`${row.name} · ¥${money(row.amountCents)} · ${row.percent.toFixed(1)}%`).width('100%').height(52).borderRadius(16).backgroundColor('#FFFFFF').fontColor(FinanceTheme.text)
-          .onClick(() => this.drill(this.appliedIncome ? 'income' : 'expense', row.id))
-      }, (row: CategoryStat) => row.id)
+  @State count: number = 0;
+  @State categories: CategoryStat[] = [];
+  @State selectedKey: string = '';
+  @State categoryStart: string = '';
+  @State categoryEnd: string = '';
+  @State categoryPeriod: string = '';
+  private range: DateRange = recentMonths();
 
+  aboutToAppear(): void { this.refresh(); }
+
+  private refresh(): void {
+    this.range = recentMonths();
+    this.result = statistics(this.state.data, this.range, 'expense', this.unit);
+    this.count = this.state.data.entries.filter((row) => row.type === 'expense' && row.date >= this.range.startDate && row.date <= this.range.endDate).length;
+    // The initial highlight and category breakdown always refer to the same bucket.
+    if (this.result.trend.length) {
+      this.selectBucket(this.result.trend[this.result.trend.length - 1]);
+    } else {
+      this.categories = [];
+      this.selectedKey = '';
+      this.categoryStart = this.range.startDate;
+      this.categoryEnd = this.range.endDate;
+      this.categoryPeriod = '';
+    }
+  }
+
+  private selectBucket(row: StatBucket): void {
+    this.categories = statistics(this.state.data, { startDate: row.startDate, endDate: row.endDate }, 'expense', this.unit).categories;
+    this.selectedKey = row.key;
+    this.categoryStart = row.startDate;
+    this.categoryEnd = row.endDate;
+    this.categoryPeriod = this.unit === 'month' ? `${row.startDate.slice(0, 4)}年${Number(row.startDate.slice(5, 7))}月` :
+      this.unit === 'day' ? row.startDate.replace(/-/g, '.') :
+      `${row.startDate.replace(/-/g, '.')} — ${row.endDate.replace(/-/g, '.')}`;
+  }
+
+  private drill(category: string = '', start: string = this.range.startDate, end: string = this.range.endDate): void {
+    const filter = defaultFilter();
+    filter.type = 'expense';
+    filter.range = { startDate: start, endDate: end };
+    filter.categoryIds = category ? [category] : [];
+    this.onDetails(filter);
+  }
+
+  build() {
+    Column({ space: 16 }) {
+      Button({ type: ButtonType.Normal }) {
+        Column({ space: 10 }) {
+          Text(`共支出 ${this.count} 笔`).fontSize(13).fontColor(FinanceTheme.muted)
+          Text(`合计 ¥${money(this.result.expenseCents)}`)
+            .fontSize(27).fontWeight(FontWeight.Medium).fontColor(FinanceTheme.text)
+            .maxLines(1).minFontSize(16).maxFontSize(27).width('100%').textAlign(TextAlign.Center)
+        }.width('100%')
+      }.width('100%').padding(24).backgroundColor(FinanceTheme.card).borderRadius(22)
+        .id('statistics-summary').onClick(() => this.drill())
+
+      FinanceCharts({ categories: this.categories, trend: this.result.trend, unit: this.unit,
+        selectedKey: this.selectedKey, categoryPeriod: this.categoryPeriod,
+        onUnit: (unit: TrendUnit) => { this.unit = unit; this.refresh(); },
+        onCategory: (id: string) => this.drill(id, this.categoryStart, this.categoryEnd),
+        onBucket: (row: StatBucket) => this.selectBucket(row) })
     }.width('100%').id('finance-page-statistics')
   }
 }
