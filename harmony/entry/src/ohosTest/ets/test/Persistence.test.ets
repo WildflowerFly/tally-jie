@@ -91,6 +91,27 @@ export default function persistenceTest() {
         expect(rejected).assertTrue(); expect((await repository.load())!.revision).assertEqual(2);
       } finally { store.close(); await relationalStore.deleteRdbStore(context, name); }
     });
+    it('accountCardMetadataSurvivesRepositoryRestartAndLegacyEdits', 0, async () => {
+      const delegator = abilityDelegatorRegistry.getAbilityDelegator();
+      await delegator.startAbility({ bundleName: 'com.tallyjie.harmony', abilityName: 'EntryAbility' });
+      const context = (await delegator.getCurrentTopAbility()).context;
+      const name = `ledger-card-test-${Date.now()}.db`;
+      let store = await LedgerDatabase.open(context, name);
+      try {
+        const now = '2026-11-18T00:00:00.000Z';
+        const data = upsertAccount(emptyLedger(), 'card', '备用金', 'standard', '123.45', now,
+          { englishName: 'Reserve', holder: 'Avery Lin', iconKey: 'wallet' });
+        let repository = new LedgerRepository(store);
+        await repository.initialize(data, null);
+        const edited = upsertAccount(data, 'card', '旅行备用金', 'standard', '130', now);
+        await repository.save(edited, 1);
+        store.close(); store = await LedgerDatabase.open(context, name); repository = new LedgerRepository(store);
+        const loaded = (await repository.load())!.data.accounts[0];
+        expect(loaded.name).assertEqual('旅行备用金');
+        expect(loaded.englishName).assertEqual('Reserve');
+        expect(loaded.holder).assertEqual('Avery Lin'); expect(loaded.iconKey).assertEqual('wallet');
+      } finally { store.close(); await relationalStore.deleteRdbStore(context, name); }
+    });
     it('foreignKeysRejectDanglingRows', 0, async () => {
       const delegator = abilityDelegatorRegistry.getAbilityDelegator();
       await delegator.startAbility({ bundleName: 'com.tallyjie.harmony', abilityName: 'EntryAbility' });
