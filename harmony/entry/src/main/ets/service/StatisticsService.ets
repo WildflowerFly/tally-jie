@@ -3,7 +3,7 @@ import { assertRange, rangeDays, calendarWeek, calendarMonth } from '../domain/D
 import { addCents } from '../domain/Money';
 export type TrendUnit = 'day' | 'week' | 'month';
 export interface StatBucket { key: string; startDate: string; endDate: string; amountCents: number; }
-export interface CategoryStat { id: string; name: string; amountCents: number; percent: number; }
+export interface CategoryStat { id: string; name: string; iconKey?: string; amountCents: number; percent: number; }
 export interface StatisticsResult {
   incomeCents: number; expenseCents: number; netCents: number; averageExpenseCents: number;
   categories: CategoryStat[]; trend: StatBucket[]; highestDays: string[]; highestCategories: string[];
@@ -39,7 +39,8 @@ export function statistics(data: LedgerData, range: DateRange, type: EntryType, 
     bucket.amountCents = addCents(bucket.amountCents, row.amountCents);
     let category = result.categories.find((item) => item.id === row.categoryId);
     if (category === undefined) {
-      category = { id: row.categoryId, name: data.categories.find((item) => item.id === row.categoryId)!.name, amountCents: 0, percent: 0 };
+      const source = data.categories.find((item) => item.id === row.categoryId)!;
+      category = { id: row.categoryId, name: source.name, iconKey: source.iconKey, amountCents: 0, percent: 0 };
       result.categories.push(category);
     }
     category.amountCents = addCents(category.amountCents, row.amountCents);

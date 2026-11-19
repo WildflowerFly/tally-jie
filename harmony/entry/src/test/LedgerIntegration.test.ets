@@ -3,7 +3,6 @@ import { emptyLedger } from '../main/ets/model/LedgerModels';
 import { upsertAccount } from '../main/ets/service/AccountService';
 import { upsertCategory } from '../main/ets/service/CategoryService';
 import { saveEntry, deleteEntry } from '../main/ets/service/TransactionService';
-import { saveTransfer } from '../main/ets/service/TransferService';
 import { saveBudget, budgetUsage } from '../main/ets/service/BudgetService';
 import { validateLedger, accountBalance } from '../main/ets/domain/LedgerRules';
 import { exportJson, previewJson } from '../main/ets/service/DataExchangeService';
@@ -24,7 +23,10 @@ export default function ledgerIntegrationTest() {
       expect(accountBalance(data, 'a')).assertEqual(100000); expect(accountBalance(data, 'b')).assertEqual(12000);
       expect(budgetUsage(data, data.budgets[0]).usedCents).assertEqual(0);
       data = saveEntry(data, { id: 'income', type: 'income', amount: '50', accountId: 'a', categoryId: 'salary', date: '2026-11-17', time: '12:00', note: '' }, now);
-      data = saveTransfer(data, { id: 'transfer', fromAccountId: 'a', toAccountId: 'b', amount: '500', date: '2026-11-17', time: '12:00', note: '' }, now);
+      // Existing backups can still contain transfers; they are not editable in the app.
+      data.transfers.push({ id: 'legacy-transfer', fromAccountId: 'a', toAccountId: 'b', amountCents: 50000,
+        date: '2026-11-17', time: '12:00', note: '', createdAt: now, updatedAt: now });
+      validateLedger(data);
       expect(accountBalance(data, 'a')).assertEqual(55000); expect(accountBalance(data, 'b')).assertEqual(62000);
       const filter = defaultFilter(); filter.range = { startDate: '2026-11-01', endDate: '2026-11-30' };
       expect(queryEntries(data, filter).incomeCents).assertEqual(5000); expect(queryEntries(data, filter).expenseCents).assertEqual(0);

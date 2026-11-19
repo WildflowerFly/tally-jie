@@ -4,6 +4,17 @@ import { validateLedger } from '../domain/LedgerRules';
 import { calendarMonth, calendarWeek } from '../domain/DateRange';
 export interface BudgetInput { id: string; categoryId: string | null; amount: string; period: BudgetPeriod; startDate: string; endDate: string; }
 export interface BudgetUsage { usedCents: number; remainingCents: number; percent: number; }
+// A month card and its editor must select the same full-month total rule.
+export function monthlyTotalBudget(data: LedgerData, today: string): BudgetRule | undefined {
+  const month = calendarMonth(today);
+  return data.budgets.find((row) => row.scope === 'total' && row.categoryId === null &&
+    row.startDate === month.startDate && row.endDate === month.endDate);
+}
+export function saveMonthlyBudget(data: LedgerData, amount: string, today: string, newId: string, now: string): LedgerData {
+  const existing = monthlyTotalBudget(data, today);
+  return saveBudget(data, { id: existing?.id || newId, categoryId: null, amount: amount, period: 'month',
+    startDate: today, endDate: '' }, now);
+}
 export function saveBudget(data: LedgerData, input: BudgetInput, now: string): LedgerData {
   const next: LedgerData = JSON.parse(JSON.stringify(data)) as LedgerData;
   const range: DateRange = input.period === 'month' ? calendarMonth(input.startDate) : input.period === 'week' ? calendarWeek(input.startDate) : { startDate: input.startDate, endDate: input.endDate };

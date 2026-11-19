@@ -50,6 +50,15 @@ export default function accountTest() {
       expect(rejects(() => removeAccount(data, 'a', 'b'))).assertTrue();
       expect(data.accounts.length).assertEqual(2);
     });
+    it('lastAccountCanBeDeletedAndRecreatedWithoutChangingCommittedData', 0, () => {
+      const data = upsertAccount(emptyLedger(), 'only', '唯一账户', 'standard', '12.34', NOW);
+      const empty = removeAccount(data, 'only');
+      expect(empty.accounts.length).assertEqual(0);
+      expect(data.accounts.length).assertEqual(1);
+      const next = upsertAccount(empty, 'new', '新账户', 'credit', '-5', NOW);
+      expect(next.accounts.length).assertEqual(1);
+      expect(accountBalance(next, 'new')).assertEqual(-500);
+    });
     it('repairFlagClearsAndCreatedAtSurvivesEditing', 0, () => {
       const data = fixture(); data.accounts[0].needsInitialBalance = true; data.accounts[0].createdAt = null;
       const next = upsertAccount(data, 'a', '现金', 'standard', '', NOW);

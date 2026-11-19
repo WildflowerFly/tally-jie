@@ -1,5 +1,6 @@
 import { Account, Category, LedgerData, LedgerError, LedgerFilter } from '../model/LedgerModels';
 import { MAX_AMOUNT_CENTS, addCents, assertAmount } from './Money';
+import { isStoredAccountIcon } from './AccountAppearance';
 import { assertRange, calendarMonth, calendarWeek, isLedgerDate } from './DateRange';
 
 function entity(condition: boolean): void {
@@ -67,6 +68,11 @@ export function validateLedger(data: LedgerData): void {
     accounts.set(item.id, item); balances.set(item.id, item.initialBalanceCents);
     entity(item.type === 'standard' || item.type === 'credit');
     entity(typeof item.name === 'string' && item.name.trim().length > 0 && typeof item.needsInitialBalance === 'boolean');
+    entity(item.englishName === undefined || (typeof item.englishName === 'string' &&
+      item.englishName.length <= 40 && /^[\x20-\x7E]*$/.test(item.englishName)));
+    entity(item.holder === undefined || (typeof item.holder === 'string' && item.holder.length <= 40 &&
+      !/[\x00-\x1F\x7F]/.test(item.holder)));
+    entity(item.iconKey === undefined || isStoredAccountIcon(item.iconKey));
     if (!Number.isSafeInteger(item.initialBalanceCents) || Math.abs(item.initialBalanceCents) > MAX_AMOUNT_CENTS) {
       throw new LedgerError('INVALID_AMOUNT');
     }

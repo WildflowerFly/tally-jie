@@ -4,7 +4,12 @@ export type EntryType = 'income' | 'expense';
 export type BudgetPeriod = 'month' | 'week' | 'custom';
 export type BudgetScope = 'total' | 'category';
 
+// Optional presentation metadata keeps existing v2 ledgers/backups compatible.
+export interface AccountAppearance { englishName: string; holder: string; iconKey?: string; }
 export interface Account {
+  englishName?: string;
+  holder?: string;
+  iconKey?: string;
   id: string;
   name: string;
   type: AccountType;

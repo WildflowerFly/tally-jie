@@ -1,4 +1,4 @@
-import { LedgerData, AccountType, Account, LedgerError } from '../model/LedgerModels';
+import { LedgerData, AccountType, Account, AccountAppearance, LedgerError } from '../model/LedgerModels';
 import { validateLedger, assertAccountRemovable } from '../domain/LedgerRules';
 import { parseInitialBalance } from '../domain/Money';
 
@@ -8,7 +8,7 @@ export function accountReferences(data: LedgerData, id: string): AccountReferenc
     transfers: data.transfers.filter((row) => row.fromAccountId === id || row.toAccountId === id).length };
 }
 export function upsertAccount(data: LedgerData, id: string, name: string, type: AccountType,
-  initial: string, now: string): LedgerData {
+  initial: string, now: string, appearance?: AccountAppearance): LedgerData {
   const next: LedgerData = JSON.parse(JSON.stringify(data)) as LedgerData;
   const trimmed = name.trim();
   if (trimmed.length === 0 || trimmed.length > 40 || next.accounts.some((row) => row.id !== id && row.name === trimmed)) {
@@ -18,6 +18,13 @@ export function upsertAccount(data: LedgerData, id: string, name: string, type: 
   const account: Account = { id: id, name: trimmed, type: type,
     initialBalanceCents: parseInitialBalance(initial, type), needsInitialBalance: false,
     createdAt: old === undefined ? now : old.createdAt, updatedAt: now };
+  // Legacy callers editing balances/names must not erase the card metadata.
+  const englishName = appearance === undefined ? old?.englishName : appearance.englishName.trim();
+  const holder = appearance === undefined ? old?.holder : appearance.holder.trim();
+  const iconKey = appearance === undefined ? old?.iconKey : appearance.iconKey;
+  if (englishName !== undefined) { account.englishName = englishName; }
+  if (holder !== undefined) { account.holder = holder; }
+  if (iconKey !== undefined) { account.iconKey = iconKey; }
   if (old === undefined) { next.accounts.push(account); }
   else { next.accounts[next.accounts.findIndex((row) => row.id === id)] = account; }
   validateLedger(next); return next;

@@ -37,8 +37,9 @@ function load(relative, dependencies) {
 const models = load('entry/src/main/ets/model/LedgerModels.ets', {});
 const money = load('entry/src/main/ets/domain/Money.ets', { '../model/LedgerModels': models });
 const dates = load('entry/src/main/ets/domain/DateRange.ets', { '../model/LedgerModels': models });
+const appearance = load('entry/src/main/ets/domain/AccountAppearance.ets', { '../model/LedgerModels': models });
 const rules = load('entry/src/main/ets/domain/LedgerRules.ets', {
-  '../model/LedgerModels': models, './Money': money, './DateRange': dates
+  '../model/LedgerModels': models, './Money': money, './DateRange': dates, './AccountAppearance': appearance
 });
 const domain = load('entry/src/main/ets/model/AppData.ets', {
   './LedgerModels': models, '../domain/Money': money, '../domain/DateRange': dates,
@@ -75,6 +76,11 @@ load('entry/src/test/Category.test.ets', {
   '@ohos/hypium': hypium, '../main/ets/model/LedgerModels': models,
   '../main/ets/service/CategoryService': categories
 }).default();
+const recordCategories = load('entry/src/main/ets/domain/RecordCategories.ets', { '../model/LedgerModels': models });
+load('entry/src/test/RecordCategories.test.ets', {
+  '@ohos/hypium': hypium, '../main/ets/model/LedgerModels': models,
+  '../main/ets/domain/RecordCategories': recordCategories, '../main/ets/service/CategoryService': categories
+}).default();
 const transactions = load('entry/src/main/ets/service/TransactionService.ets', {
   '../model/LedgerModels': models, '../domain/LedgerRules': rules, '../domain/Money': money
 });
@@ -103,18 +109,21 @@ load('entry/src/test/Budget.test.ets', {
   '@ohos/hypium': hypium, '../main/ets/model/LedgerModels': models,
   '../main/ets/service/BudgetService': budget
 }).default();
-const transfers = load('entry/src/main/ets/service/TransferService.ets', {
-  '../model/LedgerModels': models, '../domain/Money': money, '../domain/LedgerRules': rules
-});
-load('entry/src/test/Transfer.test.ets', {
-  '@ohos/hypium': hypium, '../main/ets/model/LedgerModels': models,
-  '../main/ets/service/TransferService': transfers, '../main/ets/domain/LedgerRules': rules
-}).default();
 const csvCodec = load('entry/src/main/ets/domain/CsvCodec.ets', {});
 const exchange = load('entry/src/main/ets/service/DataExchangeService.ets', {
   '../model/LedgerModels': models, '../domain/Money': money, '../domain/LedgerRules': rules,
   '../domain/DateRange': dates, '../domain/CsvCodec': csvCodec
 });
+const glyph = load('entry/src/main/ets/domain/CategoryGlyph.ets', {});
+load('entry/src/test/CategoryGlyph.test.ets', {
+  '@ohos/hypium': hypium, '../main/ets/model/LedgerModels': models,
+  '../main/ets/domain/CategoryGlyph': glyph, '../main/ets/service/StatisticsService': stats
+}).default();
+load('entry/src/test/LegacyTransferCompatibility.test.ets', {
+  '@ohos/hypium': hypium, '../main/ets/model/LedgerModels': models,
+  '../main/ets/service/AccountService': accounts, '../main/ets/domain/LedgerRules': rules,
+  '../main/ets/service/DataExchangeService': exchange
+}).default();
 load('entry/src/test/Exchange.test.ets', {
   '@ohos/hypium': hypium, '../main/ets/model/LedgerModels': models,
   '../main/ets/domain/CsvCodec': csvCodec, '../main/ets/service/DataExchangeService': exchange
@@ -122,7 +131,7 @@ load('entry/src/test/Exchange.test.ets', {
 load('entry/src/test/LedgerIntegration.test.ets', {
   '@ohos/hypium': hypium, '../main/ets/model/LedgerModels': models,
   '../main/ets/service/AccountService': accounts, '../main/ets/service/CategoryService': categories,
-  '../main/ets/service/TransactionService': transactions, '../main/ets/service/TransferService': transfers,
+  '../main/ets/service/TransactionService': transactions,
   '../main/ets/service/BudgetService': budget, '../main/ets/domain/LedgerRules': rules,
   '../main/ets/service/DataExchangeService': exchange, '../main/ets/service/LedgerQueryService': queries,
   '../main/ets/service/StatisticsService': stats
@@ -134,10 +143,31 @@ load('entry/src/test/EntryQuery.test.ets', {
   '@ohos/hypium': hypium, '../main/ets/repository/EntryQuery': entrySql,
   '../main/ets/service/LedgerQueryService': queries
 }).default();
+const details = load('entry/src/main/ets/domain/DetailsOverview.ets', {
+  '../model/LedgerModels': models, './DateRange': dates, './Money': money, '../service/BudgetService': budget
+});
+load('entry/src/test/DetailsOverview.test.ets', {
+  '@ohos/hypium': hypium, '../main/ets/model/LedgerModels': models, '../main/ets/domain/DetailsOverview': details
+}).default();
+const detailsPalette = load('entry/src/main/ets/theme/DetailsPalette.ets', {});
+load('entry/src/test/DetailsPalette.test.ets', {
+  '@ohos/hypium': hypium, '../main/ets/theme/DetailsPalette': detailsPalette
+}).default();
+const navGeometry = load('entry/src/main/ets/domain/NavGeometry.ets', {});
+load('entry/src/test/NavGeometry.test.ets', { '@ohos/hypium': hypium, '../main/ets/domain/NavGeometry': navGeometry }).default();
 const geometry = load('entry/src/main/ets/domain/ChartGeometry.ets', {});
 load('entry/src/test/Charts.test.ets', { '@ohos/hypium': hypium, '../main/ets/domain/ChartGeometry': geometry }).default();
+load('entry/src/test/AccountAppearance.test.ets', {
+  '@ohos/hypium': hypium, '../main/ets/model/LedgerModels': models,
+  '../main/ets/domain/LedgerRules': rules, '../main/ets/service/AccountService': accounts,
+  '../main/ets/domain/AccountAppearance': appearance,
+  '../main/ets/service/DataExchangeService': exchange
+}).default();
 const cards = load('entry/src/main/ets/domain/CardLayout.ets', {});
-load('entry/src/test/Cards.test.ets', { '@ohos/hypium': hypium, '../main/ets/domain/CardLayout': cards }).default();
+const depositLayout = load('entry/src/main/ets/domain/DepositLayout.ets', {});
+load('entry/src/test/Cards.test.ets', {
+  '@ohos/hypium': hypium, '../main/ets/domain/CardLayout': cards, '../main/ets/domain/DepositLayout': depositLayout
+}).default();
 const formats = load('entry/src/main/ets/service/ExchangeFormats.ets', {
   '../model/LedgerModels': models, './DataExchangeService': exchange,
   '../domain/CsvCodec': csvCodec, '../domain/LedgerRules': rules, '../domain/Money': money, '../domain/DateRange': dates
